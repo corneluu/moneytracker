@@ -25,7 +25,12 @@ export default function ExpenseForm({ onExpenseAdded }) {
 
     const isoTimestamp = new Date(datetime).toISOString();
     const monthCycle = getMonthCycle(isoTimestamp);
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    
+    const maxId = expenses.reduce((max, e) => {
+      const num = parseInt(e.id, 10);
+      return !isNaN(num) && num > max ? num : max;
+    }, 0);
+    const id = String(maxId + 1);
 
     const expense = {
       id,

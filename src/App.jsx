@@ -210,7 +210,7 @@ export default function App() {
             )}
 
             {activeTab === 1 && (
-              <ExpenseForm onExpenseAdded={handleExpenseAdded} />
+              <ExpenseForm onExpenseAdded={handleExpenseAdded} expenses={expenses} />
             )}
 
             {activeTab === 2 && (

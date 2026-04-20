@@ -49,8 +49,13 @@ export default function Subscriptions({ subscriptions, expenses, onSubsChanged, 
     if (!form.item.trim()) return setAddError('Item name is required.');
     if (isNaN(priceNum) || priceNum <= 0) return setAddError('Price must be a positive number.');
 
+    const maxId = subscriptions.reduce((max, s) => {
+      const num = parseInt(s.id, 10);
+      return !isNaN(num) && num > max ? num : max;
+    }, 0);
+
     const sub = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: String(maxId + 1),
       item: form.item.trim(),
       category: form.category,
       price: priceNum,
@@ -117,10 +122,16 @@ export default function Subscriptions({ subscriptions, expenses, onSubsChanged, 
     const monthCycle = getCurrentCycle();
     const addedExpenses = [];
 
+    let currentExpMaxId = expenses.reduce((max, e) => {
+      const num = parseInt(e.id, 10);
+      return !isNaN(num) && num > max ? num : max;
+    }, 0);
+
     try {
       for (const sub of activeOnes) {
+        currentExpMaxId++;
         const expense = {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          id: String(currentExpMaxId),
           timestamp: cycleStartISO,
           item: sub.item,
           category: sub.category,
