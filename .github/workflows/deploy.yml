@@ -39,6 +39,7 @@ jobs:
         env:
           VITE_SHEET_ID: ${{ secrets.VITE_SHEET_ID }}
           VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

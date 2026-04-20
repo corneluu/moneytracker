@@ -5,15 +5,29 @@ const BASE = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
 // ──────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────
+let oauthToken = null;
+
+export function setOAuthToken(token) {
+  oauthToken = token;
+}
+
 function buildUrl(path, params = {}) {
   const url = new URL(`${BASE}${path}`);
-  url.searchParams.set('key', API_KEY);
+  // Only append API key if we don't have an OAuth token
+  if (!oauthToken && API_KEY) {
+    url.searchParams.set('key', API_KEY);
+  }
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   return url.toString();
 }
 
 async function apiFetch(url, options = {}) {
-  const res = await fetch(url, options);
+  const headers = { ...options.headers };
+  if (oauthToken) {
+    headers.Authorization = `Bearer ${oauthToken}`;
+  }
+  
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try {

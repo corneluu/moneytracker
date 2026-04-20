@@ -1,22 +1,28 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Dashboard from './components/Dashboard.jsx';
 import ExpenseForm from './components/ExpenseForm.jsx';
 import Subscriptions from './components/Subscriptions.jsx';
 import History from './components/History.jsx';
-import { fetchExpenses, fetchSubscriptions } from './utils/sheets.js';
+import { fetchExpenses, fetchSubscriptions, setOAuthToken } from './utils/sheets.js';
 import './App.css';
 
 const TABS = ['Dashboard', 'Add Expense', 'Subscriptions', 'History'];
 const TAB_ICONS = ['📊', '➕', '🔄', '📜'];
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 export default function App() {
   const [expenses, setExpenses] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
 
+  // Auth State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const tokenClient = useRef(null);
+
   const loadData = useCallback(async () => {
+    if (!isAuthenticated) return;
     setLoading(true);
     setError(null);
     try {
@@ -28,11 +34,60 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  }, [isAuthenticated]);
+
+  // Init Google Identity Services
+  function initGoogleAuth() {
+    if (window.google && !tokenClient.current) {
+      tokenClient.current = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: (tokenResponse) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            setOAuthToken(tokenResponse.access_token);
+            sessionStorage.setItem('moneytrack_token', tokenResponse.access_token);
+            setIsAuthenticated(true);
+            setError(null);
+          } else {
+            setError('Failed to authenticate with Google.');
+          }
+        },
+      });
+    }
+  }
+
+  useEffect(() => {
+    // Check for cached token (optional, but good for local dev refreshes)
+    const storedToken = sessionStorage.getItem('moneytrack_token');
+    if (storedToken) {
+      setOAuthToken(storedToken);
+      setIsAuthenticated(true);
+    }
+    initGoogleAuth();
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated, loadData]);
+
+  function handleLogin() {
+    initGoogleAuth(); // Try again in case script loaded late
+    if (tokenClient.current) {
+      tokenClient.current.requestAccessToken();
+    } else {
+      setError('Google Accounts script not loaded yet. Please wait a second and try again.');
+    }
+  }
+
+  function handleLogout() {
+    setIsAuthenticated(false);
+    setOAuthToken(null);
+    sessionStorage.removeItem('moneytrack_token');
+    setExpenses([]);
+    setSubscriptions([]);
+  }
 
   // ── Expense mutations (optimistic local state) ──────────────────
   function handleExpenseAdded(expense) {
@@ -59,6 +114,31 @@ export default function App() {
         return prev.filter((s) => s.id !== action.id);
       return prev;
     });
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <div className="app-header__inner" style={{ justifyContent: 'center' }}>
+            <div className="app-logo">
+              <span className="app-logo__icon">💰</span>
+              <span className="app-logo__text">MoneyTrack</span>
+            </div>
+          </div>
+        </header>
+        <main className="app-main" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div className="welcome-banner" style={{ maxWidth: '400px', width: '100%' }}>
+            <h1>Sign in to MoneyTrack</h1>
+            <p style={{ marginBottom: '24px' }}>Authorize with Google to safely write to your spreadsheet without a backend.</p>
+            {error && <div className="alert alert--error mb-2">{error}</div>}
+            <button className="btn btn--primary btn--full" onClick={handleLogin}>
+              Google Sign-In
+            </button>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
