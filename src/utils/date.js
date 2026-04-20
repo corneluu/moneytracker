@@ -1,0 +1,86 @@
+/**
+ * Calculate the MonthCycle (salary cycle label "YYYY-MM") from an ISO timestamp.
+ * Rule: cycle runs from the 7th 00:00 of month M to the 6th 23:59 of month M+1.
+ * If day >= 7 → cycle is "YYYY-MM" of that month.
+ * If day < 7  → cycle is "YYYY-MM" of the PREVIOUS month.
+ */
+export function getMonthCycle(isoTimestamp) {
+  const date = new Date(isoTimestamp);
+  const day = date.getDate();
+
+  if (day >= 7) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  } else {
+    // Use the previous month
+    const prev = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+    const year = prev.getFullYear();
+    const month = String(prev.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  }
+}
+
+/**
+ * Get the current salary cycle label "YYYY-MM" based on today's date.
+ */
+export function getCurrentCycle() {
+  return getMonthCycle(new Date().toISOString());
+}
+
+/**
+ * Get the start (Date) of a cycle given a "YYYY-MM" label.
+ * Start = 7th of that month at 00:00 local time.
+ */
+export function getCycleStart(cycleLabel) {
+  const [year, month] = cycleLabel.split('-').map(Number);
+  return new Date(year, month - 1, 7, 0, 0, 0, 0);
+}
+
+/**
+ * Get the end (Date) of a cycle given a "YYYY-MM" label.
+ * End = 6th of the NEXT month at 23:59:59 local time.
+ */
+export function getCycleEnd(cycleLabel) {
+  const [year, month] = cycleLabel.split('-').map(Number);
+  // Next month (month is 0-indexed, we pass month as-is which is already next month index)
+  return new Date(year, month, 6, 23, 59, 59, 999);
+}
+
+/**
+ * Format a cycle label "YYYY-MM" into a human-readable range string.
+ * e.g. "7 Apr - 6 May"
+ */
+export function formatCycleRange(cycleLabel) {
+  const start = getCycleStart(cycleLabel);
+  const end = getCycleEnd(cycleLabel);
+  const opts = { day: 'numeric', month: 'short' };
+  const startStr = start.toLocaleDateString('en-GB', opts);
+  const endStr = end.toLocaleDateString('en-GB', opts);
+  return `${startStr} – ${endStr}`;
+}
+
+/**
+ * Returns true if a cycle label represents a COMPLETED cycle
+ * (its end date is strictly before now).
+ */
+export function isCycleCompleted(cycleLabel) {
+  return getCycleEnd(cycleLabel) < new Date();
+}
+
+/**
+ * Get the ISO string for the start of the current cycle (7th 00:00 local time).
+ */
+export function getCurrentCycleStartISO() {
+  const cycle = getCurrentCycle();
+  return getCycleStart(cycle).toISOString();
+}
+
+/**
+ * Format a datetime-local string default value (local time, no seconds).
+ */
+export function localDatetimeDefault() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
