@@ -26,24 +26,11 @@ export default function App() {
     setLoading(true);
     setError(null);
 
-    // Fail-safe: force loading to false after 20s if it's still stuck
-    const safetyTimer = setTimeout(() => {
-      setLoading((curr) => {
-        if (curr) {
-          setError('Loading took too long. Please refresh or check your internet.');
-          return false;
-        }
-        return curr;
-      });
-    }, 20000);
-
     try {
       const [exp, subs] = await Promise.all([fetchExpenses(), fetchSubscriptions()]);
-      clearTimeout(safetyTimer);
       setExpenses(exp);
       setSubscriptions(subs);
     } catch (err) {
-      clearTimeout(safetyTimer);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -172,9 +159,6 @@ export default function App() {
 
   return (
     <div className="app">
-      <div style={{ background: 'yellow', color: 'black', padding: '5px', fontSize: '10px', position: 'fixed', top: 0, left: 0, zIndex: 9999 }}>
-        DEBUG: Auth={isAuthenticated ? 'YES' : 'NO'}, Tab={activeTab}, Loading={loading ? 'YES' : 'NO'}
-      </div>
       {/* Header */}
       <header className="app-header">
         <div className="app-header__inner">
