@@ -195,52 +195,48 @@ export default function App() {
         </div>
       )}
 
-      {!loading || expenses.length > 0 ? (
-        <>
-          {/* Tab nav */}
-          <nav className="tab-nav" aria-label="Main navigation">
-            {TABS.map((tab, i) => (
-              <button
-                key={tab}
-                className={`tab-nav__btn ${activeTab === i ? 'tab-nav__btn--active' : ''}`}
-                onClick={() => setActiveTab(i)}
-                id={`tab-${tab.toLowerCase().replace(' ', '-')}`}
-              >
-                <span className="tab-nav__icon">{TAB_ICONS[i]}</span>
-                <span className="tab-nav__label">{tab}</span>
-              </button>
-            ))}
-          </nav>
+      {/* Tab nav */}
+      <nav className="tab-nav" aria-label="Main navigation">
+        {TABS.map((tab, i) => (
+          <button
+            key={tab}
+            className={`tab-nav__btn ${activeTab === i ? 'tab-nav__btn--active' : ''}`}
+            onClick={() => setActiveTab(i)}
+            id={`tab-${tab.toLowerCase().replace(' ', '-')}`}
+          >
+            <span className="tab-nav__icon">{TAB_ICONS[i]}</span>
+            <span className="tab-nav__label">{tab}</span>
+          </button>
+        ))}
+      </nav>
 
-          {/* Tab panels */}
-          <main className="app-main">
-            {activeTab === 0 && (
-              <Dashboard expenses={expenses} subscriptions={subscriptions} />
-            )}
+      {/* Main Content */}
+      <main className="app-main">
+        {activeTab === 0 && (
+          <Dashboard expenses={expenses} subscriptions={subscriptions} />
+        )}
 
-            {activeTab === 1 && (
-              <ExpenseForm onExpenseAdded={handleExpenseAdded} expenses={expenses} />
-            )}
+        {activeTab === 1 && (
+          <ExpenseForm onExpenseAdded={handleExpenseAdded} expenses={expenses} />
+        )}
 
-            {activeTab === 2 && (
-              <Subscriptions
-                subscriptions={subscriptions}
-                expenses={expenses}
-                onSubsChanged={handleSubsChanged}
-                onExpenseAdded={handleExpenseAdded}
-              />
-            )}
+        {activeTab === 2 && (
+          <Subscriptions
+            subscriptions={subscriptions}
+            expenses={expenses}
+            onSubsChanged={handleSubsChanged}
+            onExpenseAdded={handleExpenseAdded}
+          />
+        )}
 
-            {activeTab === 3 && (
-              <History
-                expenses={expenses}
-                onExpenseUpdated={handleExpenseUpdated}
-                onExpenseDeleted={handleExpenseDeleted}
-              />
-            )}
-          </main>
-        </>
-      ) : null}
+        {activeTab === 3 && (
+          <History
+            expenses={expenses}
+            onExpenseUpdated={handleExpenseUpdated}
+            onExpenseDeleted={handleExpenseDeleted}
+          />
+        )}
+      </main>
 
       <footer className="app-footer">
         <span>MoneyTrack · Salary cycle tracker · RON</span>

@@ -6,6 +6,7 @@
  */
 export function getMonthCycle(isoTimestamp) {
   const date = new Date(isoTimestamp);
+  if (isNaN(date.getTime())) return 'Invalid';
   const day = date.getDate();
 
   if (day >= 7) {
@@ -60,11 +61,11 @@ export function getCycleEnd(cycleLabel) {
  * e.g. "7 Apr - 6 May"
  */
 export function formatCycleRange(cycleLabel) {
-  if (!cycleLabel) return 'Unknown Cycle';
+  if (!cycleLabel || cycleLabel === 'Invalid') return 'Unknown Cycle';
   const start = getCycleStart(cycleLabel);
   const end = getCycleEnd(cycleLabel);
   
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'Invalid Cycle';
+  if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) return 'Invalid Cycle';
   
   const opts = { day: 'numeric', month: 'short' };
   const startStr = start.toLocaleDateString('en-GB', opts);
