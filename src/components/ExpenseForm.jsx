@@ -4,7 +4,7 @@ import { appendExpense } from '../utils/sheets.js';
 
 const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Health'];
 
-export default function ExpenseForm({ onExpenseAdded }) {
+export default function ExpenseForm({ onExpenseAdded, expenses }) {
   const [item, setItem] = useState('');
   const [datetime, setDatetime] = useState(localDatetimeDefault());
   const [category, setCategory] = useState('Food');
