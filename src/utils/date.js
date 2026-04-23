@@ -33,7 +33,11 @@ export function getCurrentCycle() {
  * Start = 7th of that month at 00:00 local time.
  */
 export function getCycleStart(cycleLabel) {
+  if (!cycleLabel || typeof cycleLabel !== 'string' || !cycleLabel.includes('-')) {
+    return new Date(); // Fallback to now
+  }
   const [year, month] = cycleLabel.split('-').map(Number);
+  if (isNaN(year) || isNaN(month)) return new Date();
   return new Date(year, month - 1, 7, 0, 0, 0, 0);
 }
 
@@ -42,7 +46,11 @@ export function getCycleStart(cycleLabel) {
  * End = 6th of the NEXT month at 23:59:59 local time.
  */
 export function getCycleEnd(cycleLabel) {
+  if (!cycleLabel || typeof cycleLabel !== 'string' || !cycleLabel.includes('-')) {
+    return new Date(); // Fallback to now
+  }
   const [year, month] = cycleLabel.split('-').map(Number);
+  if (isNaN(year) || isNaN(month)) return new Date();
   // Next month (month is 0-indexed, we pass month as-is which is already next month index)
   return new Date(year, month, 6, 23, 59, 59, 999);
 }
@@ -52,8 +60,12 @@ export function getCycleEnd(cycleLabel) {
  * e.g. "7 Apr - 6 May"
  */
 export function formatCycleRange(cycleLabel) {
+  if (!cycleLabel) return 'Unknown Cycle';
   const start = getCycleStart(cycleLabel);
   const end = getCycleEnd(cycleLabel);
+  
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'Invalid Cycle';
+  
   const opts = { day: 'numeric', month: 'short' };
   const startStr = start.toLocaleDateString('en-GB', opts);
   const endStr = end.toLocaleDateString('en-GB', opts);

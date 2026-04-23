@@ -23,7 +23,7 @@ export default function Dashboard({ expenses }) {
   const savedThisCycle = SALARY - spentThisCycle;
 
   // Total saved ever: count completed cycles only (excluding current)
-  const allCycles = [...new Set(expenses.map((e) => e.monthCycle))];
+  const allCycles = [...new Set(expenses.map((e) => e.monthCycle).filter(Boolean))];
   const completedCycles = allCycles.filter(
     (c) => c !== currentCycle && isCycleCompleted(c)
   );

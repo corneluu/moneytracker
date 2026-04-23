@@ -27,8 +27,9 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
   // Group by monthCycle descending
   const cycleMap = {};
   for (const e of expenses) {
-    if (!cycleMap[e.monthCycle]) cycleMap[e.monthCycle] = [];
-    cycleMap[e.monthCycle].push(e);
+    const cycle = e.monthCycle || 'Unknown';
+    if (!cycleMap[cycle]) cycleMap[cycle] = [];
+    cycleMap[cycle].push(e);
   }
   const sortedCycles = Object.keys(cycleMap).sort((a, b) => (a > b ? -1 : 1));
 

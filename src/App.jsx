@@ -118,25 +118,33 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <div className="app">
-        <header className="app-header">
-          <div className="app-header__inner" style={{ justifyContent: 'center' }}>
-            <div className="app-logo">
+      <div className="app app--login">
+        <div className="login-container">
+          <div className="login-card">
+            <div className="app-logo app-logo--large">
               <span className="app-logo__icon">💰</span>
               <span className="app-logo__text">MoneyTrack</span>
             </div>
-          </div>
-        </header>
-        <main className="app-main" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-          <div className="welcome-banner" style={{ maxWidth: '400px', width: '100%' }}>
-            <h1>Sign in to MoneyTrack</h1>
-            <p style={{ marginBottom: '24px' }}>Authorize with Google to safely write to your spreadsheet without a backend.</p>
-            {error && <div className="alert alert--error mb-2">{error}</div>}
-            <button className="btn btn--primary btn--full" onClick={handleLogin}>
-              Google Sign-In
+            <h1 className="login-title">Welcome Back</h1>
+            <p className="login-subtitle">
+              Securely track your expenses and salary cycles using Google Sheets as your private database.
+            </p>
+            
+            {error && (
+              <div className="alert alert--error mb-4" role="alert">
+                <span className="alert__icon">⚠️</span> {error}
+              </div>
+            )}
+
+            <button className="btn btn--primary btn--lg btn--full login-btn" onClick={handleLogin}>
+              <span className="btn__icon">🔑</span> Sign in with Google
             </button>
+            
+            <p className="login-footer">
+              Your data never leaves Google's servers. We only ask for permission to write to your selected spreadsheet.
+            </p>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
@@ -170,11 +178,13 @@ export default function App() {
         </div>
       )}
 
-      {/* Loading overlay on initial load */}
+      {/* Initial Loading overlay */}
       {loading && expenses.length === 0 && (
-        <div className="loading-screen" aria-live="polite">
-          <div className="loading-screen__spinner" />
-          <p>Loading your financial data…</p>
+        <div className="loading-overlay" aria-live="polite">
+          <div className="loading-screen">
+            <div className="loading-screen__spinner" />
+            <p>Syncing with your Google Sheet…</p>
+          </div>
         </div>
       )}
 
