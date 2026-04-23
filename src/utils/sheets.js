@@ -41,16 +41,27 @@ async function apiFetch(url, options = {}) {
     headers.Authorization = `Bearer ${oauthToken}`;
   }
   
-  const res = await fetch(url, { ...options, headers });
-  if (!res.ok) {
-    let msg = `HTTP ${res.status} on ${url}`;
-    try {
-      const body = await res.json();
-      msg = body?.error?.message || msg;
-    } catch (_) {}
-    throw new Error(msg);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  
+  try {
+    const res = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      let msg = `HTTP ${res.status} on ${url}`;
+      try {
+        const body = await res.json();
+        msg = body?.error?.message || msg;
+      } catch (_) {}
+      throw new Error(msg);
+    }
+    return res.json();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') throw new Error('Request timed out (15s). Please check your connection.');
+    throw err;
   }
-  return res.json();
 }
 
 // ──────────────────────────────────────────────────────────────
