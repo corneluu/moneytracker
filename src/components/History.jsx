@@ -24,10 +24,15 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
   const [loadingId, setLoadingId] = useState(null);
   const [error, setError] = useState(null);
 
-  // Group by monthCycle descending
+  // Normalize and group by effective cycle descending
+  const normalizedExpenses = expenses.map(e => ({
+    ...e,
+    effectiveCycle: (e.timestamp ? getMonthCycle(e.timestamp) : e.monthCycle) || 'Unknown'
+  }));
+
   const cycleMap = {};
-  for (const e of expenses) {
-    const cycle = e.monthCycle || 'Unknown';
+  for (const e of normalizedExpenses) {
+    const cycle = e.effectiveCycle;
     if (!cycleMap[cycle]) cycleMap[cycle] = [];
     cycleMap[cycle].push(e);
   }
