@@ -212,30 +212,36 @@ export default function App() {
 
       {/* Main Content */}
       <main className="app-main">
-        {activeTab === 0 && (
-          <Dashboard expenses={expenses} subscriptions={subscriptions} />
-        )}
-
-        {activeTab === 1 && (
-          <ExpenseForm onExpenseAdded={handleExpenseAdded} expenses={expenses} />
-        )}
-
-        {activeTab === 2 && (
-          <Subscriptions
-            subscriptions={subscriptions}
-            expenses={expenses}
-            onSubsChanged={handleSubsChanged}
-            onExpenseAdded={handleExpenseAdded}
-          />
-        )}
-
-        {activeTab === 3 && (
-          <History
-            expenses={expenses}
-            onExpenseUpdated={handleExpenseUpdated}
-            onExpenseDeleted={handleExpenseDeleted}
-          />
-        )}
+        {(() => {
+          try {
+            if (activeTab === 0) return <Dashboard expenses={expenses || []} subscriptions={subscriptions || []} />;
+            if (activeTab === 1) return <ExpenseForm onExpenseAdded={handleExpenseAdded} expenses={expenses || []} />;
+            if (activeTab === 2) return (
+              <Subscriptions
+                subscriptions={subscriptions || []}
+                expenses={expenses || []}
+                onSubsChanged={handleSubsChanged}
+                onExpenseAdded={handleExpenseAdded}
+              />
+            );
+            if (activeTab === 3) return (
+              <History
+                expenses={expenses || []}
+                onExpenseUpdated={handleExpenseUpdated}
+                onExpenseDeleted={handleExpenseDeleted}
+              />
+            );
+            return null;
+          } catch (err) {
+            return (
+              <div className="alert alert--error">
+                <h3>UI Crash Detected</h3>
+                <p>{err.message}</p>
+                <button className="btn btn--primary mt-2" onClick={() => window.location.reload()}>Reload App</button>
+              </div>
+            );
+          }
+        })()}
       </main>
 
       <footer className="app-footer">
