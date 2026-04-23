@@ -96,3 +96,18 @@ export function localDatetimeDefault() {
   const pad = (n) => String(n).padStart(2, '0');
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 }
+
+/**
+ * Get the previous cycle label "YYYY-MM" given a current label.
+ */
+export function getPreviousCycle(cycleLabel) {
+  if (!cycleLabel || !cycleLabel.includes('-')) return null;
+  const [year, month] = cycleLabel.split('-').map(Number);
+  // months are 0-indexed in JS Date. 
+  // If month is 4 (April), we want March (index 2). 
+  // current month index is month-1 (3). previous is month-2 (2).
+  const date = new Date(year, month - 2, 1);
+  const prevYear = date.getFullYear();
+  const prevMonth = String(date.getMonth() + 1).padStart(2, '0');
+  return `${prevYear}-${prevMonth}`;
+}
