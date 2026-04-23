@@ -102,8 +102,8 @@ export default function App() {
 
   function handleExpenseDeleted(id) {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
-    // Re-fetch to sync row indices after a deletion
-    loadData();
+    // Re-fetch to sync row indices after a deletion (with a small delay for API stability)
+    setTimeout(() => loadData(), 500);
   }
 
   // ── Subscription mutations ──────────────────────────────────────
@@ -119,7 +119,7 @@ export default function App() {
     
     // If a subscription was deleted or added, re-fetch to sync row indices
     if (action.type === 'delete' || action.type === 'add') {
-      loadData();
+      setTimeout(() => loadData(), 500);
     }
   }
 
@@ -197,9 +197,6 @@ export default function App() {
 
       {!loading || expenses.length > 0 ? (
         <>
-          {/* Dashboard always visible */}
-          <Dashboard expenses={expenses} subscriptions={subscriptions} />
-
           {/* Tab nav */}
           <nav className="tab-nav" aria-label="Main navigation">
             {TABS.map((tab, i) => (
@@ -218,12 +215,7 @@ export default function App() {
           {/* Tab panels */}
           <main className="app-main">
             {activeTab === 0 && (
-              <section aria-label="Dashboard detail">
-                <div className="welcome-banner">
-                  <h1>Your Financial Overview</h1>
-                  <p>Track expenses, manage subscriptions, and stay on budget — all in one place.</p>
-                </div>
-              </section>
+              <Dashboard expenses={expenses} subscriptions={subscriptions} />
             )}
 
             {activeTab === 1 && (

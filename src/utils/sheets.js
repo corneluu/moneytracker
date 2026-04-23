@@ -12,12 +12,26 @@ export function setOAuthToken(token) {
 }
 
 function buildUrl(path, params = {}) {
-  const url = new URL(`${BASE}${path}`);
+  // Ensure path starts correctly.
+  // 1. If path is empty, it's the base spreadsheet URL (no trailing slash).
+  // 2. If path starts with ':', it's an action like :batchUpdate (no slash).
+  // 3. Otherwise, it's a sub-resource like /values (needs a slash).
+  let finalPath = path;
+  if (path && !path.startsWith('/') && !path.startsWith(':')) {
+    finalPath = '/' + path;
+  }
+  
+  const url = new URL(`${BASE}${finalPath}`);
+  
   // Only append API key if we don't have an OAuth token
   if (!oauthToken && API_KEY) {
     url.searchParams.set('key', API_KEY);
   }
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) {
+      url.searchParams.set(k, v);
+    }
+  });
   return url.toString();
 }
 
@@ -29,7 +43,7 @@ async function apiFetch(url, options = {}) {
   
   const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
+    let msg = `HTTP ${res.status} on ${url}`;
     try {
       const body = await res.json();
       msg = body?.error?.message || msg;
@@ -246,7 +260,8 @@ export async function deleteSubscription(rowIndex) {
 const _gidCache = {};
 async function getSheetGid(sheetName) {
   if (_gidCache[sheetName] !== undefined) return _gidCache[sheetName];
-  const url = buildUrl('', { fields: 'sheets.properties' });
+  // Get spreadsheet metadata to find sheet GIDs
+  const url = buildUrl('', { fields: 'sheets(properties(title,sheetId))' });
   const data = await apiFetch(url);
   for (const sheet of data.sheets || []) {
     _gidCache[sheet.properties.title] = sheet.properties.sheetId;

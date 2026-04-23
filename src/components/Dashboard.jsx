@@ -12,8 +12,14 @@ export default function Dashboard({ expenses, subscriptions = [] }) {
   const prevCycle = getPreviousCycle(currentCycle);
   const cycleRange = formatCycleRange(currentCycle);
 
+  // Normalize expenses: ensure we always have a cycle based on the timestamp "truth"
+  const normalizedExpenses = expenses.map(e => ({
+    ...e,
+    effectiveCycle: (e.timestamp ? getMonthCycle(e.timestamp) : e.monthCycle) || 'Unknown'
+  }));
+
   // --- CURRENT CYCLE CALCS ---
-  const expensesInCycle = expenses.filter((e) => e.monthCycle === currentCycle);
+  const expensesInCycle = normalizedExpenses.filter((e) => e.effectiveCycle === currentCycle);
   const actualSpentThisCycle = expensesInCycle.reduce((sum, e) => sum + e.price, 0);
 
   const activeSubscriptions = subscriptions.filter(s => s.active);
@@ -28,19 +34,20 @@ export default function Dashboard({ expenses, subscriptions = [] }) {
   const savedThisCycle = SALARY - spentThisCycle;
 
   // --- PREVIOUS CYCLE CALCS ---
-  const expensesInPrev = expenses.filter((e) => e.monthCycle === prevCycle);
+  const expensesInPrev = normalizedExpenses.filter((e) => e.effectiveCycle === prevCycle);
   const spentPrevCycle = expensesInPrev.reduce((sum, e) => sum + e.price, 0);
   const savedPrevCycle = SALARY - spentPrevCycle;
 
   // --- TOTALS ---
-  const totalSpentEver = expenses.reduce((sum, e) => sum + e.price, 0);
-  const allCycles = [...new Set(expenses.map((e) => e.monthCycle).filter(Boolean))];
+  const totalSpentEver = normalizedExpenses.reduce((sum, e) => sum + e.price, 0);
+  
+  const allCycles = [...new Set(normalizedExpenses.map((e) => e.effectiveCycle).filter(c => c !== 'Unknown'))];
   const completedCycles = allCycles.filter(
     (c) => c !== currentCycle && isCycleCompleted(c)
   );
   const completedCount = completedCycles.length;
-  const spentInCompleted = expenses
-    .filter((e) => completedCycles.includes(e.monthCycle))
+  const spentInCompleted = normalizedExpenses
+    .filter((e) => completedCycles.includes(e.effectiveCycle))
     .reduce((sum, e) => sum + e.price, 0);
   const totalSavedEver = completedCount * SALARY - spentInCompleted;
 
