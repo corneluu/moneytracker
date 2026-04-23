@@ -3,7 +3,7 @@ import { getMonthCycle, localDatetimeDefault, formatCycleRange } from '../utils/
 import { updateExpense, deleteExpense } from '../utils/sheets.js';
 
 const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Health'];
-const SALARY = 5000;
+import { SALARY } from '../utils/constants.js';
 
 const CATEGORY_EMOJI = {
   Food: '🍔',

@@ -4,23 +4,34 @@ import {
   formatCycleRange,
   isCycleCompleted,
 } from '../utils/date.js';
+import { SALARY } from '../utils/constants.js';
 
-const SALARY = 5000;
-
-export default function Dashboard({ expenses }) {
+export default function Dashboard({ expenses, subscriptions = [] }) {
   const currentCycle = getCurrentCycle();
   const cycleRange = formatCycleRange(currentCycle);
 
-  // Spent this cycle
-  const spentThisCycle = expenses
-    .filter((e) => e.monthCycle === currentCycle)
-    .reduce((sum, e) => sum + e.price, 0);
+  // 1. Calculate actual expenses recorded for this cycle
+  const expensesInCycle = expenses.filter((e) => e.monthCycle === currentCycle);
+  const actualSpentThisCycle = expensesInCycle.reduce((sum, e) => sum + e.price, 0);
 
-  // Total spent ever
-  const totalSpentEver = expenses.reduce((sum, e) => sum + e.price, 0);
+  // 2. Calculate active subscriptions that haven't been "run" (recorded as expenses) yet
+  // We check if a subscription is already in the expenses for this cycle by comparing the item name and type
+  const activeSubscriptions = subscriptions.filter(s => s.active);
+  const pendingSubscriptionsTotal = activeSubscriptions.reduce((sum, sub) => {
+    const alreadyRecorded = expensesInCycle.some(
+      (e) => e.item === sub.item && e.type === 'subscription'
+    );
+    return alreadyRecorded ? sum : sum + sub.price;
+  }, 0);
+
+  // Spent this cycle (Actual + Pending Subs)
+  const spentThisCycle = actualSpentThisCycle + pendingSubscriptionsTotal;
 
   // Saved this cycle
   const savedThisCycle = SALARY - spentThisCycle;
+
+  // Total spent ever (actual records only)
+  const totalSpentEver = expenses.reduce((sum, e) => sum + e.price, 0);
 
   // Total saved ever: count completed cycles only (excluding current)
   const allCycles = [...new Set(expenses.map((e) => e.monthCycle).filter(Boolean))];
@@ -46,7 +57,12 @@ export default function Dashboard({ expenses }) {
       <div className="dashboard-cards">
         <div className="dash-card dash-card--spent">
           <div className="dash-card__label">Spent this cycle</div>
-          <div className="dash-card__value">{fmt(spentThisCycle)} <span className="currency">RON</span></div>
+          <div className="dash-card__value">
+            {fmt(spentThisCycle)} <span className="currency">RON</span>
+          </div>
+          {pendingSubscriptionsTotal > 0 && (
+            <div className="dash-card__sub">Incl. {fmt(pendingSubscriptionsTotal)} pending subs</div>
+          )}
         </div>
 
         <div className={`dash-card dash-card--saved ${savedThisCycle < 0 ? 'dash-card--negative' : ''}`}>
@@ -54,6 +70,7 @@ export default function Dashboard({ expenses }) {
           <div className="dash-card__value">
             {fmt(savedThisCycle)} <span className="currency">RON</span>
           </div>
+          <div className="dash-card__sub">Target: {fmt(SALARY)}</div>
         </div>
 
         <div className="dash-card dash-card--total-spent">

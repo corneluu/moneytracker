@@ -155,7 +155,7 @@ export async function updateExpense(rowIndex, expense) {
 export async function deleteExpense(rowIndex) {
   // We need the sheet ID (gid) for batchUpdate. Fetch it first.
   const sheetGid = await getSheetGid('Expenses');
-  const url = buildUrl('/batchUpdate');
+  const url = buildUrl(':batchUpdate');
   const body = {
     requests: [{
       deleteDimension: {
@@ -220,7 +220,7 @@ export async function updateSubscription(rowIndex, sub) {
 
 export async function deleteSubscription(rowIndex) {
   const sheetGid = await getSheetGid('Subscriptions');
-  const url = buildUrl('/batchUpdate');
+  const url = buildUrl(':batchUpdate');
   const body = {
     requests: [{
       deleteDimension: {

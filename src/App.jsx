@@ -102,6 +102,8 @@ export default function App() {
 
   function handleExpenseDeleted(id) {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+    // Re-fetch to sync row indices after a deletion
+    loadData();
   }
 
   // ── Subscription mutations ──────────────────────────────────────
@@ -114,6 +116,11 @@ export default function App() {
         return prev.filter((s) => s.id !== action.id);
       return prev;
     });
+    
+    // If a subscription was deleted or added, re-fetch to sync row indices
+    if (action.type === 'delete' || action.type === 'add') {
+      loadData();
+    }
   }
 
   if (!isAuthenticated) {
@@ -191,7 +198,7 @@ export default function App() {
       {!loading || expenses.length > 0 ? (
         <>
           {/* Dashboard always visible */}
-          <Dashboard expenses={expenses} />
+          <Dashboard expenses={expenses} subscriptions={subscriptions} />
 
           {/* Tab nav */}
           <nav className="tab-nav" aria-label="Main navigation">
