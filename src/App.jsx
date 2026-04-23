@@ -25,11 +25,25 @@ export default function App() {
     if (!isAuthenticated) return;
     setLoading(true);
     setError(null);
+
+    // Fail-safe: force loading to false after 20s if it's still stuck
+    const safetyTimer = setTimeout(() => {
+      setLoading((curr) => {
+        if (curr) {
+          setError('Loading took too long. Please refresh or check your internet.');
+          return false;
+        }
+        return curr;
+      });
+    }, 20000);
+
     try {
       const [exp, subs] = await Promise.all([fetchExpenses(), fetchSubscriptions()]);
+      clearTimeout(safetyTimer);
       setExpenses(exp);
       setSubscriptions(subs);
     } catch (err) {
+      clearTimeout(safetyTimer);
       setError(err.message);
     } finally {
       setLoading(false);
