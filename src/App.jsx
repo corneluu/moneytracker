@@ -158,6 +158,9 @@ export default function App() {
 
   return (
     <div className="app">
+      <div style={{ background: 'yellow', color: 'black', padding: '5px', fontSize: '10px', position: 'fixed', top: 0, left: 0, zIndex: 9999 }}>
+        DEBUG: Auth={isAuthenticated ? 'YES' : 'NO'}, Tab={activeTab}, Loading={loading ? 'YES' : 'NO'}
+      </div>
       {/* Header */}
       <header className="app-header">
         <div className="app-header__inner">
