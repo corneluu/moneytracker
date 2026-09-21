@@ -6,6 +6,12 @@ import {
   appendExpense,
 } from '../utils/sheets.js';
 import { getCurrentCycle, getCurrentCycleStartISO, getMonthCycle } from '../utils/date.js';
+import {
+  logSubscriptionAdded,
+  logSubscriptionToggled,
+  logSubscriptionRun,
+  logSubscriptionDeleted,
+} from '../utils/discordLogger.js';
 
 const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Health'];
 
@@ -65,6 +71,7 @@ export default function Subscriptions({ subscriptions, expenses, onSubsChanged, 
     setAddLoading(true);
     try {
       await appendSubscription(sub);
+      logSubscriptionAdded(sub);
       setAddSuccess(true);
       setForm({ item: '', category: 'Food', price: '' });
       onSubsChanged({ type: 'add', sub });
@@ -81,6 +88,7 @@ export default function Subscriptions({ subscriptions, expenses, onSubsChanged, 
     try {
       const updated = { ...sub, active: !sub.active };
       await updateSubscription(sub.rowIndex, updated);
+      logSubscriptionToggled(updated);
       onSubsChanged({ type: 'update', sub: updated });
     } catch (err) {
       setRowError((p) => ({ ...p, [sub.id]: err.message }));
@@ -95,6 +103,7 @@ export default function Subscriptions({ subscriptions, expenses, onSubsChanged, 
     setRowError((p) => ({ ...p, [sub.id]: null }));
     try {
       await deleteSubscription(sub.rowIndex);
+      logSubscriptionDeleted(sub);
       onSubsChanged({ type: 'delete', id: sub.id });
     } catch (err) {
       setRowError((p) => ({ ...p, [sub.id]: err.message }));
@@ -143,6 +152,8 @@ export default function Subscriptions({ subscriptions, expenses, onSubsChanged, 
         addedExpenses.push(expense);
       }
       addedExpenses.forEach((exp) => onExpenseAdded(exp));
+      const totalAmount = addedExpenses.reduce((sum, s) => sum + s.price, 0);
+      logSubscriptionRun(addedExpenses, totalAmount);
       setRunSuccess(true);
     } catch (err) {
       setRunError(err.message);

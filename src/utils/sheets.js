@@ -1,3 +1,5 @@
+import { logSystemError } from './discordLogger.js';
+
 const SHEET_ID = import.meta.env.VITE_SHEET_ID;
 const API_KEY = import.meta.env.VITE_API_KEY;
 const BASE = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
@@ -64,8 +66,9 @@ async function apiFetch(url, options = {}) {
     return res.json();
   } catch (err) {
     clearTimeout(timeoutId);
-    if (err.name === 'AbortError') throw new Error('Request timed out (15s). Please check your connection.');
-    throw err;
+    const finalErr = err.name === 'AbortError' ? new Error('Request timed out (15s). Please check your connection.') : err;
+    logSystemError(`Google Sheets API (${options.method || 'GET'})`, finalErr);
+    throw finalErr;
   }
 }
 

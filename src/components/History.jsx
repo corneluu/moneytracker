@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { getMonthCycle, formatCycleRange } from '../utils/date.js';
 import { updateExpense, deleteExpense } from '../utils/sheets.js';
 import { SALARY } from '../utils/constants.js';
+import {
+  logExpenseUpdated,
+  logExpenseDeleted,
+  logReimbursementToggled,
+} from '../utils/discordLogger.js';
 
 const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Health', 'Bills', 'Other'];
 
@@ -86,6 +91,7 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
     try {
       await updateExpense(expense.rowIndex, updated);
       onExpenseUpdated(updated);
+      logExpenseUpdated(expense, updated);
       setEditId(null);
     } catch (err) {
       setError(err.message);
@@ -104,6 +110,7 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
     try {
       await updateExpense(expense.rowIndex, updated);
       onExpenseUpdated(updated);
+      logReimbursementToggled(updated);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -118,6 +125,7 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
     try {
       await deleteExpense(expense.rowIndex);
       onExpenseDeleted(expense.id);
+      logExpenseDeleted(expense);
     } catch (err) {
       setError(err.message);
     } finally {

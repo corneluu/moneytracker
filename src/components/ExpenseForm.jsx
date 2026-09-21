@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { getMonthCycle, localDatetimeDefault } from '../utils/date.js';
 import { appendExpense } from '../utils/sheets.js';
 import { compressReceiptFile, parseReceiptOCR } from '../utils/receiptParser.js';
+import { logExpenseAdded } from '../utils/discordLogger.js';
 
 const CATEGORIES = [
   { id: 'Food',          label: 'Food & Drink',   icon: '🍔', hex: '#F6AD55', glow: 'rgba(246,173,85,0.45)'  },
@@ -140,6 +141,7 @@ export default function ExpenseForm({ onExpenseAdded, expenses }) {
     setLoading(true);
     try {
       await appendExpense(expense);
+      logExpenseAdded(expense);
       setSuccess(true);
       setItem(''); setPrice('');
       setDatetime(localDatetimeDefault());
