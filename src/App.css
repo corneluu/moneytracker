@@ -1897,3 +1897,44 @@ body {
   border: none;
 }
 
+/* ── Dashboard Google Sheet Link Button ─────────────────────── */
+.dashboard-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-top-bar .dashboard-cycle-label {
+  margin-bottom: 0;
+}
+
+.btn-google-sheet {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(46,160,67,0.15);
+  border: 1px solid rgba(46,160,67,0.4);
+  border-radius: var(--radius-sm);
+  color: #3fb950;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--transition);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.btn-google-sheet:hover {
+  background: rgba(46,160,67,0.28);
+  border-color: #3fb950;
+  color: #56d364;
+  transform: translateY(-1px);
+}
+
+.btn-google-sheet__icon {
+  font-size: 1rem;
+}
+

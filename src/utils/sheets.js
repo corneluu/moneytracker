@@ -2,6 +2,11 @@ const SHEET_ID = import.meta.env.VITE_SHEET_ID;
 const API_KEY = import.meta.env.VITE_API_KEY;
 const BASE = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
 
+export function getGoogleSheetUrl() {
+  if (!SHEET_ID) return 'https://docs.google.com/spreadsheets';
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
+}
+
 // ──────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────
