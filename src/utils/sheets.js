@@ -114,6 +114,14 @@ export async function fetchSubscriptions() {
   }));
 }
 
+function sanitizeReceiptString(str) {
+  if (!str) return '';
+  if (str.length > 35000) {
+    return `[FILE_TOO_LARGE:${str.slice(0, 30)}]`;
+  }
+  return str;
+}
+
 // ──────────────────────────────────────────────────────────────
 // APPEND (Expenses)
 // ──────────────────────────────────────────────────────────────
@@ -137,7 +145,7 @@ export async function appendExpense(expense) {
       expense.type,
       expense.monthCycle,
       expense.reimbursed ? 'TRUE' : 'FALSE',
-      expense.receipt || '',
+      sanitizeReceiptString(expense.receipt),
     ]],
   };
   return apiFetch(url, {
@@ -170,7 +178,7 @@ export async function updateExpense(rowIndex, expense) {
       expense.type,
       expense.monthCycle,
       expense.reimbursed ? 'TRUE' : 'FALSE',
-      expense.receipt || '',
+      sanitizeReceiptString(expense.receipt),
     ]],
   };
   return apiFetch(url, {

@@ -137,6 +137,41 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
     );
   }
 
+  function resolveReceiptData(expense) {
+    if (!expense?.receipt) return null;
+
+    // Check localStorage cache first
+    try {
+      const cached = localStorage.getItem(`moneytrack_receipt_${expense.id}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.dataUrl) return parsed;
+      }
+    } catch (_) {}
+
+    // Check direct data URI
+    if (expense.receipt.startsWith('data:')) {
+      const isPdf = expense.receipt.startsWith('data:application/pdf');
+      return {
+        type: isPdf ? 'pdf' : 'image',
+        dataUrl: expense.receipt,
+        name: `Bon ${expense.item}`,
+      };
+    }
+
+    // Marker strings like PDF_LOCAL:name or IMG_LOCAL:name
+    if (expense.receipt.includes(':')) {
+      const parts = expense.receipt.split(':');
+      return {
+        type: parts[0].includes('PDF') ? 'pdf' : 'image',
+        dataUrl: null,
+        name: parts[1] || expense.item,
+      };
+    }
+
+    return { type: 'image', dataUrl: expense.receipt, name: expense.item };
+  }
+
   return (
     <section className="card history-card" aria-label="Expense History">
       <h2 className="card__title"><span className="card__icon">📜</span> History</h2>
@@ -152,11 +187,25 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
               <button className="receipt-modal-close" onClick={() => setViewReceipt(null)}>✕</button>
             </div>
             <div className="receipt-modal-body">
-              {viewReceipt.receipt.startsWith('data:application/pdf') ? (
-                <iframe src={viewReceipt.receipt} title="Bon Digital PDF" className="receipt-pdf-frame" />
-              ) : (
-                <img src={viewReceipt.receipt} alt={`Bon ${viewReceipt.item}`} className="receipt-modal-img" />
-              )}
+              {(() => {
+                const rData = resolveReceiptData(viewReceipt);
+                if (!rData) return <p className="empty-state">Nu există date despre bon</p>;
+                if (rData.dataUrl) {
+                  return rData.type === 'pdf' ? (
+                    <iframe src={rData.dataUrl} title="Bon Digital PDF" className="receipt-pdf-frame" />
+                  ) : (
+                    <img src={rData.dataUrl} alt={`Bon ${viewReceipt.item}`} className="receipt-modal-img" />
+                  );
+                }
+                return (
+                  <div className="receipt-notice" style={{ margin: 0, textAlign: 'center' }}>
+                    <p style={{ fontWeight: 700 }}>📄 {rData.name}</p>
+                    <p style={{ fontSize: '0.82rem', marginTop: '4px' }}>
+                      Bonul a fost salvat cu succes ca referință în baza de date Google Sheets.
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

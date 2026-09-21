@@ -107,11 +107,26 @@ export default function ExpenseForm({ onExpenseAdded, expenses }) {
     const isoTimestamp = new Date(datetime).toISOString();
     const monthCycle   = getMonthCycle(isoTimestamp);
     const maxId = expenses.reduce((max, e) => {
-      const n = parseInt(e.id, 10); return !isNaN(n) && n > max ? n : max;
+      const n = parseInt(e.id, 10);
+      return !isNaN(n) && n > max ? n : max;
     }, 0);
+    const newId = String(maxId + 1);
+
+    // Save full receipt in browser storage for instant lightbox viewing
+    if (receipt?.dataUrl) {
+      try {
+        localStorage.setItem(`moneytrack_receipt_${newId}`, JSON.stringify({
+          name: receipt.name,
+          type: receipt.type,
+          dataUrl: receipt.dataUrl,
+        }));
+      } catch (e) {
+        console.warn('LocalStorage limit for receipt cache reached:', e);
+      }
+    }
 
     const expense = {
-      id: String(maxId + 1),
+      id: newId,
       timestamp: isoTimestamp,
       item: item.trim(),
       category,
@@ -119,7 +134,7 @@ export default function ExpenseForm({ onExpenseAdded, expenses }) {
       type: 'expense',
       monthCycle,
       reimbursed: false,
-      receipt: receipt?.dataUrl || '',
+      receipt: receipt?.sheetPayload || receipt?.dataUrl || '',
     };
 
     setLoading(true);
