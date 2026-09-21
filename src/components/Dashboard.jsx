@@ -15,7 +15,7 @@ import {
   createAutoGoogleSheet,
 } from '../utils/sheets.js';
 
-export default function Dashboard({ expenses, subscriptions = [], onRefreshData }) {
+export default function Dashboard({ expenses, subscriptions = [], onRefreshData, onLogout }) {
   const currentCycle = getCurrentCycle();
   const prevCycle = getPreviousCycle(currentCycle);
   const cycleRange = formatCycleRange(currentCycle);
@@ -281,9 +281,16 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData 
 
         <div className="settings-footer-info">
           <span className="active-id-label">ID Activ: <code>{activeId || 'Implicit'}</code></span>
-          <button type="button" className="btn-reset-sheet" onClick={handleResetSheet}>
-            🔄 Resetează la Sheet Implicit
-          </button>
+          <div className="settings-footer-actions">
+            <button type="button" className="btn-reset-sheet" onClick={handleResetSheet}>
+              🔄 Resetează Sheet
+            </button>
+            {onLogout && (
+              <button type="button" className="btn-logout-settings" onClick={onLogout}>
+                🚪 Deconectare Cont Google
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </section>

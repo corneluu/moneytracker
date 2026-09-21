@@ -76,13 +76,22 @@ export default function App() {
   function handleLogin() {
     initGoogleAuth(); // Try again in case script loaded late
     if (tokenClient.current) {
-      tokenClient.current.requestAccessToken();
+      tokenClient.current.requestAccessToken({ prompt: 'select_account' });
     } else {
       setError('Google Accounts script not loaded yet. Please wait a second and try again.');
     }
   }
 
   function handleLogout() {
+    const currentToken = sessionStorage.getItem('moneytrack_token');
+    if (currentToken && window.google?.accounts?.oauth2?.revoke) {
+      try {
+        window.google.accounts.oauth2.revoke(currentToken, () => {});
+      } catch (e) {
+        console.warn('Revoke token warning:', e);
+      }
+    }
+
     setIsAuthenticated(false);
     setOAuthToken(null);
     sessionStorage.removeItem('moneytrack_token');
@@ -166,15 +175,25 @@ export default function App() {
             <span className="app-logo__icon">💰</span>
             <span className="app-logo__text">MoneyTrack</span>
           </div>
-          <button
-            className="btn btn--ghost btn--sm refresh-btn"
-            onClick={loadData}
-            disabled={loading}
-            title="Refresh data"
-            id="refresh-data-btn"
-          >
-            {loading ? <span className="spinner spinner--sm" /> : '⟳ Refresh'}
-          </button>
+          <div className="header-actions">
+            <button
+              className="btn btn--ghost btn--sm refresh-btn"
+              onClick={loadData}
+              disabled={loading}
+              title="Refresh data"
+              id="refresh-data-btn"
+            >
+              {loading ? <span className="spinner spinner--sm" /> : '⟳ Refresh'}
+            </button>
+            <button
+              className="btn btn--logout btn--sm"
+              onClick={handleLogout}
+              title="Deconectare cont Google"
+              id="logout-btn"
+            >
+              🚪 Deconectare
+            </button>
+          </div>
         </div>
       </header>
 
@@ -220,6 +239,7 @@ export default function App() {
                 expenses={expenses || []}
                 subscriptions={subscriptions || []}
                 onRefreshData={loadData}
+                onLogout={handleLogout}
               />
             );
             if (activeTab === 1) return <ExpenseForm onExpenseAdded={handleExpenseAdded} expenses={expenses || []} />;

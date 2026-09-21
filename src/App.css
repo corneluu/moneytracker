@@ -2095,3 +2095,48 @@ body {
   color: var(--red);
 }
 
+/* ── Header Actions & Logout Button ────────────────────────── */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn--logout {
+  background: rgba(252,129,129,0.12);
+  border: 1px solid rgba(252,129,129,0.3);
+  color: var(--red);
+  font-weight: 600;
+  transition: all var(--transition);
+}
+
+.btn--logout:hover {
+  background: rgba(252,129,129,0.25);
+  border-color: var(--red);
+  transform: translateY(-1px);
+}
+
+.settings-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-logout-settings {
+  background: rgba(252,129,129,0.12);
+  border: 1px solid rgba(252,129,129,0.3);
+  color: var(--red);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-logout-settings:hover {
+  background: rgba(252,129,129,0.25);
+  border-color: var(--red);
+}
+
