@@ -73,7 +73,7 @@ async function apiFetch(url, options = {}) {
  * Returns array of objects: { rowIndex, id, timestamp, item, category, price, type, monthCycle }
  */
 export async function fetchExpenses() {
-  const url = buildUrl('/values/Expenses!A:G', { valueRenderOption: 'UNFORMATTED_VALUE' });
+  const url = buildUrl('/values/Expenses!A:I', { valueRenderOption: 'UNFORMATTED_VALUE' });
   const data = await apiFetch(url);
   const rows = data.values || [];
   // row[0] is header
@@ -86,6 +86,8 @@ export async function fetchExpenses() {
     price: parseFloat(row[4]) || 0,
     type: row[5] ?? 'expense',
     monthCycle: row[6] ?? '',
+    reimbursed: String(row[7]).toUpperCase() === 'TRUE',
+    receipt: row[8] ?? '',
   }));
 }
 
@@ -113,10 +115,10 @@ export async function fetchSubscriptions() {
 
 /**
  * Append a new expense row.
- * @param {object} expense - { id, timestamp, item, category, price, type, monthCycle }
+ * @param {object} expense - { id, timestamp, item, category, price, type, monthCycle, reimbursed, receipt }
  */
 export async function appendExpense(expense) {
-  const url = buildUrl('/values/Expenses!A:G:append', {
+  const url = buildUrl('/values/Expenses!A:I:append', {
     valueInputOption: 'USER_ENTERED',
     insertDataOption: 'INSERT_ROWS',
   });
@@ -129,6 +131,8 @@ export async function appendExpense(expense) {
       expense.price,
       expense.type,
       expense.monthCycle,
+      expense.reimbursed ? 'TRUE' : 'FALSE',
+      expense.receipt || '',
     ]],
   };
   return apiFetch(url, {
@@ -146,7 +150,7 @@ export async function appendExpense(expense) {
  * Update a specific expense row by its 1-based row index in the sheet.
  */
 export async function updateExpense(rowIndex, expense) {
-  const range = `Expenses!A${rowIndex}:G${rowIndex}`;
+  const range = `Expenses!A${rowIndex}:I${rowIndex}`;
   const url = buildUrl(`/values/${encodeURIComponent(range)}`, {
     valueInputOption: 'USER_ENTERED',
   });
@@ -160,6 +164,8 @@ export async function updateExpense(rowIndex, expense) {
       expense.price,
       expense.type,
       expense.monthCycle,
+      expense.reimbursed ? 'TRUE' : 'FALSE',
+      expense.receipt || '',
     ]],
   };
   return apiFetch(url, {

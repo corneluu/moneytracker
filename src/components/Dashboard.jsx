@@ -21,7 +21,7 @@ export default function Dashboard({ expenses, subscriptions = [] }) {
 
   // --- CURRENT CYCLE CALCS ---
   const expensesInCycle = normalizedExpenses.filter((e) => e.effectiveCycle === currentCycle);
-  const actualSpentThisCycle = expensesInCycle.reduce((sum, e) => sum + e.price, 0);
+  const actualSpentThisCycle = expensesInCycle.reduce((sum, e) => sum + (e.reimbursed ? 0 : e.price), 0);
 
   const activeSubscriptions = subscriptions.filter(s => s.active);
   const pendingSubscriptionsTotal = activeSubscriptions.reduce((sum, sub) => {
@@ -36,11 +36,11 @@ export default function Dashboard({ expenses, subscriptions = [] }) {
 
   // --- PREVIOUS CYCLE CALCS ---
   const expensesInPrev = normalizedExpenses.filter((e) => e.effectiveCycle === prevCycle);
-  const spentPrevCycle = expensesInPrev.reduce((sum, e) => sum + e.price, 0);
+  const spentPrevCycle = expensesInPrev.reduce((sum, e) => sum + (e.reimbursed ? 0 : e.price), 0);
   const savedPrevCycle = SALARY - spentPrevCycle;
 
   // --- TOTALS ---
-  const totalSpentEver = normalizedExpenses.reduce((sum, e) => sum + e.price, 0);
+  const totalSpentEver = normalizedExpenses.reduce((sum, e) => sum + (e.reimbursed ? 0 : e.price), 0);
   
   const allCycles = [...new Set(normalizedExpenses.map((e) => e.effectiveCycle).filter(c => c !== 'Unknown'))];
   const completedCycles = allCycles.filter(
@@ -49,7 +49,7 @@ export default function Dashboard({ expenses, subscriptions = [] }) {
   const completedCount = completedCycles.length;
   const spentInCompleted = normalizedExpenses
     .filter((e) => completedCycles.includes(e.effectiveCycle))
-    .reduce((sum, e) => sum + e.price, 0);
+    .reduce((sum, e) => sum + (e.reimbursed ? 0 : e.price), 0);
   const totalSavedEver = completedCount * SALARY - spentInCompleted;
 
   const fmt = (n) =>

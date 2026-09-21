@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { getMonthCycle, localDatetimeDefault } from '../utils/date.js';
 import { appendExpense } from '../utils/sheets.js';
+import { compressReceiptFile, parseReceiptOCR } from '../utils/receiptParser.js';
 
 const CATEGORIES = [
   { id: 'Food',          label: 'Food & Drink',   icon: '🍔', hex: '#F6AD55', glow: 'rgba(246,173,85,0.45)'  },
@@ -29,9 +30,20 @@ export default function ExpenseForm({ onExpenseAdded, expenses }) {
   const [success,  setSuccess]  = useState(false);
   const [quickDate,setQuickDate]= useState(0);
   const [showDP,   setShowDP]   = useState(false);
+
+  // Receipt & OCR states
+  const [receipt, setReceipt]   = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [ocrNotice, setOcrNotice] = useState(null);
+
   // For animated price display
   const [priceFocused, setPriceFocused] = useState(false);
   const priceRef = useRef(null);
+
+  // Input refs for file upload modes
+  const cameraInputRef  = useRef(null);
+  const galleryInputRef = useRef(null);
+  const digitalInputRef = useRef(null);
 
   const cat = CATEGORIES.find(c => c.id === category) || CATEGORIES[0];
 
@@ -39,6 +51,48 @@ export default function ExpenseForm({ onExpenseAdded, expenses }) {
     setQuickDate(idx);
     setShowDP(false);
     setDatetime(buildLocalDatetime(idx === 0 ? 0 : -1));
+  }
+
+  async function handleFileSelect(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setOcrNotice(null);
+    setScanning(true);
+
+    try {
+      const processed = await compressReceiptFile(file);
+      setReceipt(processed);
+
+      // Run OCR for images
+      if (processed.type === 'image') {
+        const ocr = await parseReceiptOCR(processed.dataUrl);
+        if (ocr.detectedPrice && (!price || parseFloat(price) === 0)) {
+          setPrice(String(ocr.detectedPrice));
+          setOcrNotice(`✨ Sumă extrasă automat: ${ocr.detectedPrice.toFixed(2)} RON`);
+        } else if (ocr.detectedPrice) {
+          setOcrNotice(`✨ Sumă detectată pe bon: ${ocr.detectedPrice.toFixed(2)} RON`);
+        }
+
+        if (ocr.detectedItem && !item.trim()) {
+          setItem(ocr.detectedItem);
+        }
+      } else {
+        setOcrNotice(`📄 Bon digital atașat (${file.name})`);
+      }
+    } catch (err) {
+      setError(`Nu s-a putut procesa bonul: ${err.message}`);
+    } finally {
+      setScanning(false);
+      // Reset input value so same file can be re-selected if needed
+      e.target.value = '';
+    }
+  }
+
+  function removeReceipt() {
+    setReceipt(null);
+    setOcrNotice(null);
   }
 
   async function handleSubmit(e) {
@@ -64,6 +118,8 @@ export default function ExpenseForm({ onExpenseAdded, expenses }) {
       price: priceNum,
       type: 'expense',
       monthCycle,
+      reimbursed: false,
+      receipt: receipt?.dataUrl || '',
     };
 
     setLoading(true);
@@ -73,6 +129,7 @@ export default function ExpenseForm({ onExpenseAdded, expenses }) {
       setItem(''); setPrice('');
       setDatetime(localDatetimeDefault());
       setCategory('Food'); setQuickDate(0); setShowDP(false);
+      setReceipt(null); setOcrNotice(null);
       onExpenseAdded(expense);
       setTimeout(() => setSuccess(false), 4000);
     } catch (err) {
@@ -82,10 +139,32 @@ export default function ExpenseForm({ onExpenseAdded, expenses }) {
     }
   }
 
-  const displayPrice = price ? parseFloat(price).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-
   return (
     <div className="ef2-wrap" aria-label="Add Expense">
+
+      {/* Hidden file inputs for Camera, Gallery, Digital */}
+      <input
+        type="file"
+        ref={cameraInputRef}
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
+      <input
+        type="file"
+        ref={galleryInputRef}
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
+      <input
+        type="file"
+        ref={digitalInputRef}
+        accept="image/*,.pdf,application/pdf"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
 
       {/* ── Ambient glow ── */}
       <div className="ef2-ambient" style={{ '--cat-glow': cat.glow, '--cat-hex': cat.hex }} aria-hidden="true" />
@@ -184,7 +263,84 @@ export default function ExpenseForm({ onExpenseAdded, expenses }) {
           </div>
         </div>
 
-        {/* ══ STEP 4 — When ════════════════════════════════════════ */}
+        {/* ══ STEP 4 — Receipt Options (Poză, Galerie, Digital) ══════ */}
+        <div className="ef2-section">
+          <p className="ef2-section-label">Atașează Bon (Opțional)</p>
+          
+          <div className="receipt-buttons-grid">
+            <button
+              type="button"
+              className="receipt-btn"
+              disabled={loading || scanning}
+              onClick={() => cameraInputRef.current?.click()}
+            >
+              <span className="receipt-btn__icon">📸</span>
+              <span className="receipt-btn__text">Fă o poză</span>
+            </button>
+
+            <button
+              type="button"
+              className="receipt-btn"
+              disabled={loading || scanning}
+              onClick={() => galleryInputRef.current?.click()}
+            >
+              <span className="receipt-btn__icon">🖼️</span>
+              <span className="receipt-btn__text">Din Galerie</span>
+            </button>
+
+            <button
+              type="button"
+              className="receipt-btn"
+              disabled={loading || scanning}
+              onClick={() => digitalInputRef.current?.click()}
+            >
+              <span className="receipt-btn__icon">📄</span>
+              <span className="receipt-btn__text">Bon Digital</span>
+            </button>
+          </div>
+
+          {/* Scanning status */}
+          {scanning && (
+            <div className="receipt-scanning">
+              <span className="spinner spinner--sm" />
+              <span>Se analizează bonul cu OCR...</span>
+            </div>
+          )}
+
+          {/* OCR Notice */}
+          {ocrNotice && !scanning && (
+            <div className="receipt-notice" role="status">
+              {ocrNotice}
+            </div>
+          )}
+
+          {/* Attached Receipt Preview */}
+          {receipt && !scanning && (
+            <div className="receipt-preview-card">
+              <div className="receipt-preview-thumb">
+                {receipt.type === 'pdf' ? (
+                  <span className="receipt-pdf-icon">📄 PDF</span>
+                ) : (
+                  <img src={receipt.previewUrl} alt="Preview Bon" />
+                )}
+              </div>
+              <div className="receipt-preview-info">
+                <span className="receipt-preview-name">{receipt.name}</span>
+                <span className="receipt-preview-status">✅ Atașat la baza de date</span>
+              </div>
+              <button
+                type="button"
+                className="receipt-remove-btn"
+                title="Șterge bonul"
+                onClick={removeReceipt}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ══ STEP 5 — When ════════════════════════════════════════ */}
         <div className="ef2-section">
           <p className="ef2-section-label">When</p>
           <div className="ef2-date-chips">
@@ -232,7 +388,7 @@ export default function ExpenseForm({ onExpenseAdded, expenses }) {
         <button
           type="submit"
           className="ef2-submit"
-          disabled={loading}
+          disabled={loading || scanning}
           style={{ '--ch': cat.hex, '--cg': cat.glow }}
           id="add-expense-btn"
         >

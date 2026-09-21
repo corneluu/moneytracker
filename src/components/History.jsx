@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { getMonthCycle, localDatetimeDefault, formatCycleRange } from '../utils/date.js';
+import { getMonthCycle, formatCycleRange } from '../utils/date.js';
 import { updateExpense, deleteExpense } from '../utils/sheets.js';
-
-const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Health'];
 import { SALARY } from '../utils/constants.js';
+
+const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Health', 'Bills', 'Other'];
 
 const CATEGORY_EMOJI = {
   Food: '🍔',
-  Transport: '🚌',
-  Entertainment: '🎬',
+  Transport: '🚗',
+  Entertainment: '🎮',
   Shopping: '🛍️',
   Health: '💊',
+  Bills: '🧾',
+  Other: '📦',
 };
 
 const TYPE_BADGE = {
@@ -23,6 +25,9 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
   const [editForm, setEditForm] = useState({});
   const [loadingId, setLoadingId] = useState(null);
   const [error, setError] = useState(null);
+
+  // Modal for receipt viewing
+  const [viewReceipt, setViewReceipt] = useState(null);
 
   // Normalize and group by effective cycle descending
   const normalizedExpenses = expenses.map(e => ({
@@ -40,7 +45,6 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
 
   function startEdit(expense) {
     setEditId(expense.id);
-    // Convert ISO timestamp back to datetime-local format
     const dt = new Date(expense.timestamp);
     const pad = (n) => String(n).padStart(2, '0');
     const local = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
@@ -90,6 +94,23 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
     }
   }
 
+  async function handleToggleReimburse(expense) {
+    setError(null);
+    setLoadingId(expense.id);
+    const updated = {
+      ...expense,
+      reimbursed: !expense.reimbursed,
+    };
+    try {
+      await updateExpense(expense.rowIndex, updated);
+      onExpenseUpdated(updated);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
   async function handleDelete(expense) {
     if (!window.confirm(`Delete "${expense.item}"?`)) return;
     setError(null);
@@ -122,9 +143,29 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
 
       {error && <div className="alert alert--error mb-2" role="alert">{error}</div>}
 
+      {/* Modal Lightbox for Viewing Receipt */}
+      {viewReceipt && (
+        <div className="receipt-modal-backdrop" onClick={() => setViewReceipt(null)}>
+          <div className="receipt-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="receipt-modal-header">
+              <h3>🧾 Bon — {viewReceipt.item}</h3>
+              <button className="receipt-modal-close" onClick={() => setViewReceipt(null)}>✕</button>
+            </div>
+            <div className="receipt-modal-body">
+              {viewReceipt.receipt.startsWith('data:application/pdf') ? (
+                <iframe src={viewReceipt.receipt} title="Bon Digital PDF" className="receipt-pdf-frame" />
+              ) : (
+                <img src={viewReceipt.receipt} alt={`Bon ${viewReceipt.item}`} className="receipt-modal-img" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {sortedCycles.map((cycle) => {
         const entries = cycleMap[cycle];
-        const cycleSpent = entries.reduce((s, e) => s + e.price, 0);
+        const cycleSpent = entries.reduce((s, e) => s + (e.reimbursed ? 0 : e.price), 0);
+        const cycleReimbursed = entries.reduce((s, e) => s + (e.reimbursed ? e.price : 0), 0);
         const cycleSaved = SALARY - cycleSpent;
 
         return (
@@ -136,6 +177,9 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
               <div className="cycle-group__stats">
                 <span className="cycle-stat cycle-stat--spent">
                   Spent: <strong>{fmt(cycleSpent)} RON</strong>
+                  {cycleReimbursed > 0 && (
+                    <span className="cycle-stat-reimbursed-label"> (Decontat: {fmt(cycleReimbursed)} RON)</span>
+                  )}
                 </span>
                 <span className={`cycle-stat ${cycleSaved < 0 ? 'cycle-stat--negative' : 'cycle-stat--saved'}`}>
                   Saved: <strong>{fmt(cycleSaved)} RON</strong>
@@ -148,7 +192,7 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
                 .slice()
                 .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
                 .map((expense) => (
-                  <li key={expense.id} className="expense-item">
+                  <li key={expense.id} className={`expense-item ${expense.reimbursed ? 'expense-item--reimbursed' : ''}`}>
                     {editId === expense.id ? (
                       <div className="expense-edit-form">
                         <div className="form-row">
@@ -217,7 +261,12 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
                         <div className="expense-row__info">
                           <span className="expense-emoji">{CATEGORY_EMOJI[expense.category] || '💸'}</span>
                           <div className="expense-details">
-                            <span className="expense-name">{expense.item}</span>
+                            <div className="expense-name-line">
+                              <span className="expense-name">{expense.item}</span>
+                              {expense.reimbursed && (
+                                <span className="badge badge--decontat">✅ Decontat</span>
+                              )}
+                            </div>
                             <span className="expense-meta">
                               {expense.category} ·{' '}
                               {new Date(expense.timestamp).toLocaleString('ro-RO', {
@@ -229,9 +278,48 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
                             </span>
                           </div>
                         </div>
+
                         <div className="expense-row__right">
-                          <span className="expense-price">{fmt(expense.price)} RON</span>
+                          <div className="expense-price-container">
+                            {expense.reimbursed ? (
+                              <div className="expense-price-box">
+                                <span className="expense-price expense-price--struck"><s>{fmt(expense.price)} RON</s></span>
+                                <span className="expense-price-effective">0.00 RON</span>
+                              </div>
+                            ) : (
+                              <span className="expense-price">{fmt(expense.price)} RON</span>
+                            )}
+                          </div>
+
                           <div className="expense-actions">
+                            {/* Receipt viewer button */}
+                            {expense.receipt && (
+                              <button
+                                className="btn btn--icon btn--receipt"
+                                title="Vezi Bon"
+                                onClick={() => setViewReceipt(expense)}
+                              >
+                                🧾
+                              </button>
+                            )}
+
+                            {/* Decontare Button */}
+                            <button
+                              className={`btn btn--decontare ${expense.reimbursed ? 'btn--decontare-active' : ''}`}
+                              title={expense.reimbursed ? 'Anulează decontarea' : 'Decontează suma'}
+                              onClick={() => handleToggleReimburse(expense)}
+                              disabled={loadingId === expense.id}
+                              id={`decontare-${expense.id}`}
+                            >
+                              {loadingId === expense.id ? (
+                                <span className="spinner spinner--sm" />
+                              ) : expense.reimbursed ? (
+                                '✅ Decontat'
+                              ) : (
+                                '💸 Decontează'
+                              )}
+                            </button>
+
                             <button
                               className="btn btn--icon"
                               title="Edit"
@@ -241,6 +329,7 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
                             >
                               ✏️
                             </button>
+
                             <button
                               className="btn btn--icon btn--danger"
                               title="Delete"
