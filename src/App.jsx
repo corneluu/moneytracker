@@ -215,7 +215,13 @@ export default function App() {
       <main className="app-main">
         {(() => {
           try {
-            if (activeTab === 0) return <Dashboard expenses={expenses || []} subscriptions={subscriptions || []} />;
+            if (activeTab === 0) return (
+              <Dashboard
+                expenses={expenses || []}
+                subscriptions={subscriptions || []}
+                onRefreshData={loadData}
+              />
+            );
             if (activeTab === 1) return <ExpenseForm onExpenseAdded={handleExpenseAdded} expenses={expenses || []} />;
             if (activeTab === 2) return (
               <Subscriptions

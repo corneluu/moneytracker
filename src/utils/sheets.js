@@ -1,12 +1,94 @@
 import { logSystemError } from './discordLogger.js';
 
-const SHEET_ID = import.meta.env.VITE_SHEET_ID;
-const API_KEY = import.meta.env.VITE_API_KEY;
-const BASE = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
+const DEFAULT_SHEET_ID = import.meta.env.VITE_SHEET_ID || '';
+const API_KEY = import.meta.env.VITE_API_KEY || '';
+
+export function getActiveSheetId() {
+  return localStorage.getItem('moneytrack_custom_sheet_id') || DEFAULT_SHEET_ID;
+}
+
+export function setCustomSheetId(input) {
+  if (!input || !input.trim()) throw new Error('Te rugăm să introduci un ID sau link valid de Google Sheet.');
+  const trimmed = input.trim();
+  let extractedId = trimmed;
+
+  // Extract ID from URL if full URL is pasted
+  const urlMatch = trimmed.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (urlMatch && urlMatch[1]) {
+    extractedId = urlMatch[1];
+  }
+
+  localStorage.setItem('moneytrack_custom_sheet_id', extractedId);
+  return extractedId;
+}
+
+export function resetCustomSheetId() {
+  localStorage.removeItem('moneytrack_custom_sheet_id');
+  return DEFAULT_SHEET_ID;
+}
 
 export function getGoogleSheetUrl() {
-  if (!SHEET_ID) return 'https://docs.google.com/spreadsheets';
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
+  const currentId = getActiveSheetId();
+  if (!currentId) return 'https://docs.google.com/spreadsheets';
+  return `https://docs.google.com/spreadsheets/d/${currentId}/edit`;
+}
+
+/**
+ * 1-Click Auto Create Google Sheet in user's personal Google Drive
+ */
+export async function createAutoGoogleSheet() {
+  const url = 'https://sheets.googleapis.com/v4/spreadsheets';
+  const body = {
+    properties: {
+      title: 'MoneyTrack — Baza Mea De Date',
+    },
+    sheets: [
+      {
+        properties: { title: 'Expenses' },
+        data: [{
+          rowData: [{
+            values: [
+              { userEnteredValue: { stringValue: 'ID' } },
+              { userEnteredValue: { stringValue: 'Timestamp' } },
+              { userEnteredValue: { stringValue: 'Item' } },
+              { userEnteredValue: { stringValue: 'Category' } },
+              { userEnteredValue: { stringValue: 'Price' } },
+              { userEnteredValue: { stringValue: 'Type' } },
+              { userEnteredValue: { stringValue: 'MonthCycle' } },
+              { userEnteredValue: { stringValue: 'Reimbursed' } },
+              { userEnteredValue: { stringValue: 'Receipt' } },
+            ]
+          }]
+        }]
+      },
+      {
+        properties: { title: 'Subscriptions' },
+        data: [{
+          rowData: [{
+            values: [
+              { userEnteredValue: { stringValue: 'ID' } },
+              { userEnteredValue: { stringValue: 'Item' } },
+              { userEnteredValue: { stringValue: 'Category' } },
+              { userEnteredValue: { stringValue: 'Price' } },
+              { userEnteredValue: { stringValue: 'Active' } },
+            ]
+          }]
+        }]
+      }
+    ]
+  };
+
+  const res = await apiFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (res && res.spreadsheetId) {
+    localStorage.setItem('moneytrack_custom_sheet_id', res.spreadsheetId);
+    return res.spreadsheetId;
+  }
+  throw new Error('Nu s-a putut obține ID-ul noului Google Sheet de la Google.');
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -19,18 +101,26 @@ export function setOAuthToken(token) {
 }
 
 function buildUrl(path, params = {}) {
-  // Ensure path starts correctly.
-  // 1. If path is empty, it's the base spreadsheet URL (no trailing slash).
-  // 2. If path starts with ':', it's an action like :batchUpdate (no slash).
-  // 3. Otherwise, it's a sub-resource like /values (needs a slash).
+  const activeId = getActiveSheetId();
+  let base = `https://sheets.googleapis.com/v4/spreadsheets/${activeId}`;
+
+  // If path is full URL (like creating new spreadsheet)
+  if (path.startsWith('https://')) {
+    const fullUrl = new URL(path);
+    if (!oauthToken && API_KEY) fullUrl.searchParams.set('key', API_KEY);
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) fullUrl.searchParams.set(k, v);
+    });
+    return fullUrl.toString();
+  }
+
   let finalPath = path;
   if (path && !path.startsWith('/') && !path.startsWith(':')) {
     finalPath = '/' + path;
   }
   
-  const url = new URL(`${BASE}${finalPath}`);
+  const url = new URL(`${base}${finalPath}`);
   
-  // Only append API key if we don't have an OAuth token
   if (!oauthToken && API_KEY) {
     url.searchParams.set('key', API_KEY);
   }

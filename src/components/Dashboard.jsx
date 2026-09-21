@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   getCurrentCycle,
   getPreviousCycle,
@@ -7,13 +7,63 @@ import {
   isCycleCompleted,
 } from '../utils/date.js';
 import { SALARY } from '../utils/constants.js';
-import { getGoogleSheetUrl } from '../utils/sheets.js';
+import {
+  getGoogleSheetUrl,
+  getActiveSheetId,
+  setCustomSheetId,
+  resetCustomSheetId,
+  createAutoGoogleSheet,
+} from '../utils/sheets.js';
 
-export default function Dashboard({ expenses, subscriptions = [] }) {
+export default function Dashboard({ expenses, subscriptions = [], onRefreshData }) {
   const currentCycle = getCurrentCycle();
   const prevCycle = getPreviousCycle(currentCycle);
   const cycleRange = formatCycleRange(currentCycle);
   const sheetUrl = getGoogleSheetUrl();
+  const activeId = getActiveSheetId();
+
+  // Settings State
+  const [customInput, setCustomInput] = useState('');
+  const [sheetLoading, setSheetLoading] = useState(false);
+  const [sheetMsg, setSheetMsg] = useState(null);
+  const [sheetError, setSheetError] = useState(null);
+
+  async function handleAutoCreateSheet() {
+    setSheetError(null);
+    setSheetMsg(null);
+    setSheetLoading(true);
+    try {
+      const newId = await createAutoGoogleSheet();
+      setSheetMsg(`🎉 Noul tău Google Sheet a fost creat cu succes în Google Drive și conectat!`);
+      if (onRefreshData) onRefreshData();
+    } catch (err) {
+      setSheetError(`Nu s-a putut creea automat Sheet-ul: ${err.message}`);
+    } finally {
+      setSheetLoading(false);
+    }
+  }
+
+  function handleSaveCustomSheet(e) {
+    e.preventDefault();
+    setSheetError(null);
+    setSheetMsg(null);
+    try {
+      const savedId = setCustomSheetId(customInput);
+      setSheetMsg(`✅ Google Sheet conectat cu succes! (ID: ${savedId.slice(0, 12)}...)`);
+      setCustomInput('');
+      if (onRefreshData) onRefreshData();
+    } catch (err) {
+      setSheetError(err.message);
+    }
+  }
+
+  function handleResetSheet() {
+    if (!window.confirm('Ești sigur că vrei să resetezi la Google Sheet-ul implicit?')) return;
+    resetCustomSheetId();
+    setSheetMsg('🔄 S-a revenit la Google Sheet-ul implicit.');
+    setSheetError(null);
+    if (onRefreshData) onRefreshData();
+  }
 
   // Normalize expenses: ensure we always have a cycle based on the timestamp "truth"
   const normalizedExpenses = expenses.map(e => ({
@@ -162,6 +212,78 @@ export default function Dashboard({ expenses, subscriptions = [] }) {
               style={{ width: `${Math.min(100, (spentThisCycle / SALARY) * 100)}%` }}
             />
           </div>
+        </div>
+      </div>
+
+      {/* ⚙️ SETTINGS / DATABASE SETUP SECTION */}
+      <div className="card dashboard-settings-card">
+        <div className="dashboard-settings-header">
+          <h3 className="dashboard-settings__title">
+            <span>⚙️ Setări Bază de Date (Google Sheet)</span>
+          </h3>
+          <span className="sheet-connected-badge">🟢 Conectat</span>
+        </div>
+
+        <p className="dashboard-settings__desc">
+          Fiecare utilizator poate avea propriul Google Sheet creat și securizat în contul său personal de Google Drive.
+        </p>
+
+        {sheetMsg && <div className="alert alert--success mb-3" role="status">{sheetMsg}</div>}
+        {sheetError && <div className="alert alert--error mb-3" role="alert">{sheetError}</div>}
+
+        {/* 1-Click Auto Creation */}
+        <div className="settings-auto-create-box">
+          <div className="auto-create-info">
+            <h4>🪄 Cont Nou? Creează-ți propriul Google Sheet cu 1 Singur Click</h4>
+            <p>Aplicația va genera automat un fișier complet formatat în Google Drive-ul tău cu tabelele Expenses & Subscriptions.</p>
+          </div>
+          <button
+            type="button"
+            className="btn btn--primary btn-auto-create-sheet"
+            disabled={sheetLoading}
+            onClick={handleAutoCreateSheet}
+          >
+            {sheetLoading ? (
+              <>
+                <span className="spinner spinner--sm" />
+                <span>Se creează în Google Drive...</span>
+              </>
+            ) : (
+              <>
+                <span>🪄 Creează Automat Google Sheet-ul Meu</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className="settings-divider">
+          <span>sau conectează un Google Sheet existent</span>
+        </div>
+
+        {/* Custom Sheet Link/ID Input */}
+        <form onSubmit={handleSaveCustomSheet} className="settings-custom-form">
+          <div className="form-group flex-1">
+            <label htmlFor="custom-sheet-input">Link sau ID Google Sheet Existent</label>
+            <input
+              id="custom-sheet-input"
+              type="text"
+              className="settings-input"
+              placeholder="Lipește link-ul (ex: https://docs.google.com/spreadsheets/d/...) sau ID-ul"
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              disabled={sheetLoading}
+            />
+          </div>
+          <button type="submit" className="btn btn--ghost btn-connect-sheet" disabled={sheetLoading || !customInput.trim()}>
+            💾 Conectează Sheet
+          </button>
+        </form>
+
+        <div className="settings-footer-info">
+          <span className="active-id-label">ID Activ: <code>{activeId || 'Implicit'}</code></span>
+          <button type="button" className="btn-reset-sheet" onClick={handleResetSheet}>
+            🔄 Resetează la Sheet Implicit
+          </button>
         </div>
       </div>
     </section>
