@@ -129,22 +129,21 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
         <div className="dashboard-cycle-label">
           <span className="cycle-icon">📅</span>
           <span>Cycle: <strong>{cycleRange}</strong></span>
+          <a
+            href={sheetUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cycle-sheet-chip"
+            title="Deschide Google Sheet în Google Drive"
+          >
+            <span>Sheet</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>
         </div>
-        <a
-          href={sheetUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-google-sheet"
-          title="Open Google Sheet database in new tab"
-        >
-          <span className="btn-google-sheet__icon">🟢</span>
-          <span>Google Sheet</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-            <polyline points="15 3 21 3 21 9"/>
-            <line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-        </a>
       </div>
 
       <div className="dashboard-cards">
@@ -365,9 +364,22 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
 
         {showDatabaseSettings && (
           <div className="settings-accordion-body">
-            <p className="dashboard-settings__desc mt-2">
-              Fiecare utilizator are propriul Google Sheet securizat în contul său personal de Google Drive.
-            </p>
+            <div className="sheet-direct-open-row mt-2 mb-3">
+              <a
+                href={sheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn--google-sheet-action"
+                title="Deschide Google Sheet în Google Drive"
+              >
+                <span>🟢 Deschide Google Sheet în Drive</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+              </a>
+            </div>
 
             {sheetMsg && <div className="alert alert--success mb-3" role="status">{sheetMsg}</div>}
             {sheetError && <div className="alert alert--error mb-3" role="alert">{sheetError}</div>}
