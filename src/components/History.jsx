@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { getMonthCycle, formatCycleRange } from '../utils/date.js';
 import { updateExpense, deleteExpense } from '../utils/sheets.js';
-import { SALARY } from '../utils/constants.js';
+import { getSalary } from '../utils/constants.js';
 import {
   logExpenseUpdated,
   logExpenseDeleted,
@@ -223,7 +223,7 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
         const entries = cycleMap[cycle];
         const cycleSpent = entries.reduce((s, e) => s + (e.reimbursed ? 0 : e.price), 0);
         const cycleReimbursed = entries.reduce((s, e) => s + (e.reimbursed ? e.price : 0), 0);
-        const cycleSaved = SALARY - cycleSpent;
+        const cycleSaved = getSalary() - cycleSpent;
 
         return (
           <div key={cycle} className="cycle-group">

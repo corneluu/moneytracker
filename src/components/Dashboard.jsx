@@ -6,7 +6,7 @@ import {
   formatCycleRange,
   isCycleCompleted,
 } from '../utils/date.js';
-import { SALARY } from '../utils/constants.js';
+import { getSalary, setSalary as saveSalary, getPayDay, setPayDay as savePayDay } from '../utils/constants.js';
 import {
   getGoogleSheetUrl,
   getActiveSheetId,
@@ -21,6 +21,14 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
   const cycleRange = formatCycleRange(currentCycle);
   const sheetUrl = getGoogleSheetUrl();
   const activeId = getActiveSheetId();
+
+  // Dynamic salary
+  const [salary, setSalaryState] = useState(getSalary());
+  const [payDay, setPayDayState] = useState(getPayDay());
+  const [salaryInput, setSalaryInput] = useState(String(getSalary()));
+  const [payDayInput, setPayDayInput] = useState(String(getPayDay()));
+  const [salaryEditing, setSalaryEditing] = useState(false);
+  const [salaryMsg, setSalaryMsg] = useState(null);
 
   // Settings State
   const [customInput, setCustomInput] = useState('');
@@ -84,12 +92,12 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
   }, 0);
 
   const spentThisCycle = actualSpentThisCycle + pendingSubscriptionsTotal;
-  const savedThisCycle = SALARY - spentThisCycle;
+  const savedThisCycle = salary - spentThisCycle;
 
   // --- PREVIOUS CYCLE CALCS ---
   const expensesInPrev = normalizedExpenses.filter((e) => e.effectiveCycle === prevCycle);
   const spentPrevCycle = expensesInPrev.reduce((sum, e) => sum + (e.reimbursed ? 0 : e.price), 0);
-  const savedPrevCycle = SALARY - spentPrevCycle;
+  const savedPrevCycle = salary - spentPrevCycle;
 
   // --- TOTALS ---
   const totalSpentEver = normalizedExpenses.reduce((sum, e) => sum + (e.reimbursed ? 0 : e.price), 0);
@@ -102,7 +110,7 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
   const spentInCompleted = normalizedExpenses
     .filter((e) => completedCycles.includes(e.effectiveCycle))
     .reduce((sum, e) => sum + (e.reimbursed ? 0 : e.price), 0);
-  const totalSavedEver = completedCount * SALARY - spentInCompleted;
+  const totalSavedEver = completedCount * salary - spentInCompleted;
 
   const fmt = (n) =>
     n.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -151,7 +159,7 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
           <div className="dash-card__value">
             {fmt(savedThisCycle)} <span className="currency">RON</span>
           </div>
-          <div className="dash-card__sub">Target: {fmt(SALARY)}</div>
+          <div className="dash-card__sub">Target: {fmt(salary)}</div>
         </div>
 
         <div className="dash-card dash-card--total-spent">
@@ -204,15 +212,119 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
         <div className="budget-progress">
           <div className="budget-progress__labels">
             <span>Budget Usage</span>
-            <span>{fmt((spentThisCycle / SALARY) * 100)}%</span>
+            <span>{fmt((spentThisCycle / salary) * 100)}%</span>
           </div>
           <div className="progress-bar">
             <div 
-              className={`progress-bar__fill ${spentThisCycle > SALARY ? 'progress-bar__fill--danger' : ''}`}
-              style={{ width: `${Math.min(100, (spentThisCycle / SALARY) * 100)}%` }}
+              className={`progress-bar__fill ${spentThisCycle > salary ? 'progress-bar__fill--danger' : ''}`}
+              style={{ width: `${Math.min(100, (spentThisCycle / salary) * 100)}%` }}
             />
           </div>
         </div>
+      </div>
+
+      {/* 💰 SALARY & PAY DAY SETTINGS */}
+      <div className="card dashboard-settings-card">
+        <div className="dashboard-settings-header">
+          <h3 className="dashboard-settings__title">
+            <span>💰 Salariu & Ziua de Plată</span>
+          </h3>
+        </div>
+
+        <p className="dashboard-settings__desc">
+          Setează salariul tău lunar și ziua în care îl primești. Ciclul bugetar se va calcula automat pe baza acestor date.
+        </p>
+
+        {salaryMsg && <div className="alert alert--success mb-3" role="status">{salaryMsg}</div>}
+
+        {!salaryEditing ? (
+          <div className="salary-display">
+            <div className="salary-display__row">
+              <div className="salary-display__item">
+                <span className="salary-display__label">💵 Salariu lunar</span>
+                <span className="salary-display__value">{fmt(salary)} RON</span>
+              </div>
+              <div className="salary-display__item">
+                <span className="salary-display__label">📅 Ziua salariului</span>
+                <span className="salary-display__value">{payDay} ale lunii</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn btn--ghost btn-edit-salary"
+              onClick={() => {
+                setSalaryEditing(true);
+                setSalaryInput(String(salary));
+                setPayDayInput(String(payDay));
+                setSalaryMsg(null);
+              }}
+            >
+              ✏️ Editează
+            </button>
+          </div>
+        ) : (
+          <div className="salary-edit-form">
+            <div className="salary-edit-fields">
+              <div className="form-group">
+                <label htmlFor="salary-input">Salariu lunar (RON)</label>
+                <input
+                  id="salary-input"
+                  type="number"
+                  className="settings-input"
+                  min="0"
+                  step="100"
+                  value={salaryInput}
+                  onChange={(e) => setSalaryInput(e.target.value)}
+                  placeholder="ex: 5000"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="payday-input">Ziua salariului (1-31)</label>
+                <input
+                  id="payday-input"
+                  type="number"
+                  className="settings-input"
+                  min="1"
+                  max="31"
+                  value={payDayInput}
+                  onChange={(e) => setPayDayInput(e.target.value)}
+                  placeholder="ex: 7"
+                />
+              </div>
+            </div>
+            <div className="salary-edit-actions">
+              <button
+                type="button"
+                className="btn btn--primary btn-save-salary"
+                onClick={() => {
+                  try {
+                    const newSalary = saveSalary(salaryInput);
+                    const newPayDay = savePayDay(payDayInput);
+                    setSalaryState(newSalary);
+                    setPayDayState(newPayDay);
+                    setSalaryEditing(false);
+                    setSalaryMsg(`✅ Salvat! Salariu: ${fmt(newSalary)} RON, Ziua: ${newPayDay}`);
+                    if (onRefreshData) onRefreshData();
+                  } catch (err) {
+                    setSalaryMsg(`❌ ${err.message}`);
+                  }
+                }}
+              >
+                💾 Salvează
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => {
+                  setSalaryEditing(false);
+                  setSalaryMsg(null);
+                }}
+              >
+                Anulează
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ⚙️ SETTINGS / DATABASE SETUP SECTION */}

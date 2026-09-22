@@ -2140,3 +2140,72 @@ body {
   border-color: var(--red);
 }
 
+/* ── Salary & Pay Day Settings ──────────────────────────────── */
+.salary-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--bg-800);
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.salary-display__row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.salary-display__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.salary-display__label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.salary-display__value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.btn-edit-salary {
+  font-size: 0.85rem;
+  padding: 8px 14px;
+}
+
+.salary-edit-form {
+  margin-top: 14px;
+  background: var(--bg-800);
+  border: 1px solid var(--border);
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.salary-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.salary-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
