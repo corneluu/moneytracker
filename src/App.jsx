@@ -254,7 +254,7 @@ export default function App() {
               title="Refresh data"
               id="refresh-data-btn"
             >
-              {loading ? <span className="spinner spinner--sm" /> : '⟳ Refresh'}
+              {loading ? <span className="spinner spinner--sm" /> : <><span>⟳</span> <span className="btn-label-text">Refresh</span></>}
             </button>
             <button
               className="btn btn--logout btn--sm"
@@ -262,7 +262,7 @@ export default function App() {
               title="Deconectare cont Google"
               id="logout-btn"
             >
-              🚪 Deconectare
+              <span>🚪</span> <span className="btn-label-text">Deconectare</span>
             </button>
           </div>
         </div>

@@ -314,54 +314,59 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
                         </div>
                       </div>
                     ) : (
-                      <div className="expense-row">
-                        <div className="expense-row__info">
+                      <div className="expense-card">
+                        {/* Main info row: Emoji + Title/Meta on left, Price on right */}
+                        <div className="expense-card__main">
                           <span className="expense-emoji">{CATEGORY_EMOJI[expense.category] || '💸'}</span>
-                          <div className="expense-details">
-                            <div className="expense-name-line">
+                          <div className="expense-card__body">
+                            <div className="expense-name-row">
                               <span className="expense-name">{expense.item}</span>
                               {expense.reimbursed && (
-                                <span className="badge badge--decontat">✅ Decontat</span>
+                                <span className="badge badge--decontat">Decontat</span>
                               )}
                             </div>
-                            <span className="expense-meta">
-                              {expense.category} ·{' '}
-                              {new Date(expense.timestamp).toLocaleString('ro-RO', {
-                                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-                              })}
+                            <div className="expense-meta">
+                              <span>{expense.category}</span>
+                              <span className="expense-meta__dot">·</span>
+                              <span>
+                                {new Date(expense.timestamp).toLocaleString('ro-RO', {
+                                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                                })}
+                              </span>
                               <span className={`badge ${TYPE_BADGE[expense.type]?.cls || 'badge--expense'}`}>
                                 {TYPE_BADGE[expense.type]?.label || expense.type}
                               </span>
-                            </span>
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="expense-row__right">
-                          <div className="expense-price-container">
+                          <div className="expense-card__price">
                             {expense.reimbursed ? (
                               <div className="expense-price-box">
-                                <span className="expense-price expense-price--struck"><s>{fmt(expense.price)} RON</s></span>
-                                <span className="expense-price-effective">0.00 RON</span>
+                                <span className="expense-price--struck"><s>{fmt(expense.price)} RON</s></span>
+                                <span className="expense-price-effective">0,00 RON</span>
                               </div>
                             ) : (
                               <span className="expense-price">{fmt(expense.price)} RON</span>
                             )}
                           </div>
+                        </div>
 
-                          <div className="expense-actions">
-                            {/* Receipt viewer button */}
+                        {/* Actions row: neatly separated at the bottom */}
+                        <div className="expense-card__actions">
+                          <div className="expense-actions-left">
                             {expense.receipt && (
                               <button
-                                className="btn btn--icon btn--receipt"
+                                type="button"
+                                className="btn btn--receipt-tag"
                                 title="Vezi Bon"
                                 onClick={() => setViewReceipt(expense)}
                               >
-                                🧾
+                                🧾 Bon
                               </button>
                             )}
 
-                            {/* Decontare Button */}
                             <button
+                              type="button"
                               className={`btn btn--decontare ${expense.reimbursed ? 'btn--decontare-active' : ''}`}
                               title={expense.reimbursed ? 'Anulează decontarea' : 'Decontează suma'}
                               onClick={() => handleToggleReimburse(expense)}
@@ -376,20 +381,23 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
                                 '💸 Decontează'
                               )}
                             </button>
+                          </div>
 
+                          <div className="expense-actions-right">
                             <button
-                              className="btn btn--icon"
-                              title="Edit"
+                              type="button"
+                              className="btn btn--icon btn--sm"
+                              title="Editează"
                               onClick={() => startEdit(expense)}
                               disabled={!!loadingId}
                               id={`edit-${expense.id}`}
                             >
                               ✏️
                             </button>
-
                             <button
-                              className="btn btn--icon btn--danger"
-                              title="Delete"
+                              type="button"
+                              className="btn btn--icon btn--danger btn--sm"
+                              title="Șterge"
                               onClick={() => handleDelete(expense)}
                               disabled={loadingId === expense.id}
                               id={`delete-${expense.id}`}
