@@ -196,16 +196,20 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
                 <td>Spent</td>
                 <td>{fmt(spentPrevCycle)}</td>
                 <td>{fmt(spentThisCycle)}</td>
-                <td className={spentDiff > 0 ? 'text-danger' : 'text-success'}>
-                  {spentDiff > 0 ? '↑' : '↓'} {fmt(Math.abs(spentDiff))} ({fmt(spentPercentChange)}%)
+                <td className={spentDiff > 0 ? 'text-danger' : spentDiff < 0 ? 'text-success' : ''}>
+                  {spentDiff === 0
+                    ? '— 0,00'
+                    : `${spentDiff > 0 ? '↑' : '↓'} ${fmt(Math.abs(spentDiff))}${spentPrevCycle > 0 ? ` (${fmt(spentPercentChange)}%)` : ''}`}
                 </td>
               </tr>
               <tr>
                 <td>Saved</td>
                 <td>{fmt(savedPrevCycle)}</td>
                 <td>{fmt(savedThisCycle)}</td>
-                <td className={savedThisCycle > savedPrevCycle ? 'text-success' : 'text-danger'}>
-                  {savedThisCycle > savedPrevCycle ? '↑' : '↓'} {fmt(Math.abs(savedThisCycle - savedPrevCycle))}
+                <td className={savedThisCycle > savedPrevCycle ? 'text-success' : savedThisCycle < savedPrevCycle ? 'text-danger' : ''}>
+                  {savedThisCycle === savedPrevCycle
+                    ? '— 0,00'
+                    : `${savedThisCycle > savedPrevCycle ? '↑' : '↓'} ${fmt(Math.abs(savedThisCycle - savedPrevCycle))}`}
                 </td>
               </tr>
             </tbody>

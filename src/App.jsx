@@ -12,6 +12,26 @@ const TABS = ['Dashboard', 'Add Expense', 'Subscriptions', 'History'];
 const TAB_ICONS = ['📊', '➕', '🔄', '📜'];
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+function UserAvatar({ picture, name }) {
+  const [failed, setFailed] = useState(false);
+  const initial = (name || 'U').trim()[0]?.toUpperCase() || '👤';
+
+  if (picture && !failed) {
+    return (
+      <img
+        src={picture}
+        alt={name || 'User Avatar'}
+        className="user-badge__avatar"
+        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
+  return <span className="user-badge__initial">{initial}</span>;
+}
+
 export default function App() {
   const [expenses, setExpenses] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -220,11 +240,10 @@ export default function App() {
           <div className="header-actions">
             {userProfile && (
               <div className="user-badge" title={`Conectat ca ${userProfile.email}`}>
-                {userProfile.picture ? (
-                  <img src={userProfile.picture} alt={userProfile.name} className="user-badge__avatar" />
-                ) : (
-                  <span className="user-badge__icon">👤</span>
-                )}
+                <UserAvatar
+                  picture={userProfile.picture}
+                  name={userProfile.given_name || userProfile.name || userProfile.email}
+                />
                 <span className="user-badge__name">{userProfile.given_name || userProfile.name || userProfile.email}</span>
               </div>
             )}
