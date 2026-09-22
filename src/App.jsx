@@ -238,32 +238,62 @@ export default function App() {
           </div>
 
           <div className="header-actions">
-            {userProfile && (
-              <div className="user-badge" title={`Conectat ca ${userProfile.email}`}>
+            <button
+              type="button"
+              className="btn-header-icon refresh-btn"
+              onClick={loadData}
+              disabled={loading}
+              title="Reîmprospătează datele"
+              id="refresh-data-btn"
+              aria-label="Refresh data"
+            >
+              {loading ? (
+                <span className="spinner spinner--sm" />
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              )}
+            </button>
+
+            {userProfile ? (
+              <div className="user-profile-pill" title={`Conectat: ${userProfile.email}`}>
                 <UserAvatar
                   picture={userProfile.picture}
                   name={userProfile.given_name || userProfile.name || userProfile.email}
                 />
-                <span className="user-badge__name">{userProfile.given_name || userProfile.name || userProfile.email}</span>
+                <span className="user-profile-pill__name">{userProfile.given_name || userProfile.name?.split(' ')[0] || 'User'}</span>
+                <button
+                  type="button"
+                  className="btn-logout-inline"
+                  onClick={handleLogout}
+                  title="Deconectare cont Google"
+                  id="logout-btn"
+                  aria-label="Deconectare cont Google"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                </button>
               </div>
+            ) : (
+              <button
+                type="button"
+                className="btn btn--logout btn--sm"
+                onClick={handleLogout}
+                title="Deconectare cont Google"
+                id="logout-btn"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span>Ieșire</span>
+              </button>
             )}
-            <button
-              className="btn btn--ghost btn--sm refresh-btn"
-              onClick={loadData}
-              disabled={loading}
-              title="Refresh data"
-              id="refresh-data-btn"
-            >
-              {loading ? <span className="spinner spinner--sm" /> : <><span>⟳</span> <span className="btn-label-text">Refresh</span></>}
-            </button>
-            <button
-              className="btn btn--logout btn--sm"
-              onClick={handleLogout}
-              title="Deconectare cont Google"
-              id="logout-btn"
-            >
-              <span>🚪</span> <span className="btn-label-text">Deconectare</span>
-            </button>
           </div>
         </div>
       </header>

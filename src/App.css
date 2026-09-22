@@ -2339,18 +2339,49 @@ body {
   gap: 12px;
 }
 
-/* ── User Profile Badge ────────────────────────────────────────── */
-.user-badge {
+/* ── User Profile Pill & Header Actions ───────────────────────── */
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--bg-800);
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-header-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  padding: 4px 10px 4px 6px;
-  border-radius: 20px;
-  font-size: 0.82rem;
-  font-weight: 500;
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  padding: 0;
+}
+
+.btn-header-icon:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.user-profile-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  padding: 3px 5px 3px 6px;
+  border-radius: 20px;
+  transition: all var(--transition);
+}
+
+.user-profile-pill:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .user-badge__avatar {
@@ -2358,10 +2389,7 @@ body {
   height: 24px;
   border-radius: 50%;
   object-fit: cover;
-}
-
-.user-badge__icon {
-  font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .user-badge__initial {
@@ -2379,11 +2407,36 @@ body {
   flex-shrink: 0;
 }
 
-.user-badge__name {
-  max-width: 120px;
+.user-profile-pill__name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 90px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.btn-logout-inline {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.btn-logout-inline:hover {
+  background: rgba(252, 129, 129, 0.2);
+  color: var(--red);
+  transform: scale(1.08);
 }
 
 /* ── Onboarding Modal ──────────────────────────────────────────── */
@@ -2549,27 +2602,28 @@ body {
 
   /* Header & Navigation on Mobile */
   .app-header__inner {
-    padding: 8px 12px;
+    padding: 8px 14px;
+    height: 54px;
+  }
+  .app-logo {
+    gap: 8px;
   }
   .app-logo__text {
-    font-size: 1rem;
+    font-size: 1.05rem;
   }
-  .user-badge__name {
-    display: none; /* Hide name text on tiny screens, show avatar */
+  .user-profile-pill__name {
+    display: none; /* Hide name text on small phone screens, keep avatar + logout icon */
   }
-  .header-actions {
+  .user-profile-pill {
+    padding: 2px 4px 2px 4px;
     gap: 6px;
   }
-  .btn-label-text {
-    display: none; /* Hide text, keep only icon for clean mobile fit */
+  .header-actions {
+    gap: 8px;
   }
-  .refresh-btn, .btn--logout {
-    padding: 6px 10px;
-    font-size: 0.9rem;
-    min-height: 34px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .btn-header-icon {
+    width: 30px;
+    height: 30px;
   }
 
   /* Expense Card Mobile Adjustments */
