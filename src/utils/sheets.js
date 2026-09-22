@@ -172,6 +172,10 @@ async function apiFetch(url, options = {}) {
         const body = await res.json();
         msg = body?.error?.message || msg;
       } catch (_) {}
+      
+      if (res.status === 401 || msg.toLowerCase().includes('credential') || msg.toLowerCase().includes('authentication')) {
+        throw new Error('AUTH_EXPIRED: Sesiunea Google a expirat sau este invalidă. Te rugăm să te reconectezi.');
+      }
       throw new Error(msg);
     }
     return res.json();

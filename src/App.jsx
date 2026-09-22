@@ -263,12 +263,24 @@ export default function App() {
       )}
 
       {/* Error banner */}
-      {error && (
-        <div className="global-error" role="alert">
-          ⚠️ {error}
-          <button className="btn btn--ghost btn--sm ml-2" onClick={loadData}>Retry</button>
-        </div>
-      )}
+      {error && (() => {
+        const isAuthErr = error.includes('AUTH_EXPIRED') || error.toLowerCase().includes('credential') || error.toLowerCase().includes('authentication') || error.includes('401');
+        const cleanMsg = error.replace(/^AUTH_EXPIRED:\s*/, '');
+        return (
+          <div className="global-error" role="alert">
+            <span>⚠️ {cleanMsg}</span>
+            {isAuthErr ? (
+              <button className="btn btn--primary btn--sm ml-2" onClick={handleLogin}>
+                🔑 Reconectare Google
+              </button>
+            ) : (
+              <button className="btn btn--ghost btn--sm ml-2" onClick={loadData}>
+                ⟳ Reîncearcă
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Initial Loading overlay */}
       {loading && expenses.length === 0 && (
