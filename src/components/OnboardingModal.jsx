@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { setSalary as saveSalary, setPayDay as savePayDay } from '../utils/constants.js';
-import { createAutoGoogleSheet, setCustomSheetId } from '../utils/sheets.js';
+import { createAutoGoogleSheet, setCustomSheetId, isUserSheetConfigured } from '../utils/sheets.js';
 
-export default function OnboardingModal({ userEmail, userName, onComplete, onReAuth }) {
+export default function OnboardingModal({ userEmail, userName, onComplete, onSkip, onReAuth }) {
   const [step, setStep] = useState(1);
   const [salaryInput, setSalaryInput] = useState('5000');
   const [payDayInput, setPayDayInput] = useState('7');
@@ -12,12 +12,20 @@ export default function OnboardingModal({ userEmail, userName, onComplete, onReA
   const [error, setError] = useState(null);
   const isScopeError = error && error.toLowerCase().includes('scope');
 
+  // Auto-skip Step 2 if user already has a configured Google Sheet
+  useEffect(() => {
+    if (step === 2 && isUserSheetConfigured(userEmail)) {
+      onComplete();
+    }
+  }, [step, userEmail, onComplete]);
+
   function handleStep1Submit(e) {
     e.preventDefault();
     setError(null);
     try {
       saveSalary(salaryInput, userEmail);
       savePayDay(payDayInput, userEmail);
+      // If sheet is already configured, step 2 useEffect will auto-skip
       setStep(2);
     } catch (err) {
       setError(err.message);
@@ -51,6 +59,10 @@ export default function OnboardingModal({ userEmail, userName, onComplete, onReA
   function handleReAuthClick() {
     sessionStorage.removeItem('moneytrack_token');
     if (onReAuth) onReAuth();
+  }
+
+  function handleSkipForNow() {
+    if (onSkip) onSkip();
   }
 
   return (
@@ -172,6 +184,15 @@ export default function OnboardingModal({ userEmail, userName, onComplete, onReA
                 🔗 Conectează Sheet Existent
               </button>
             </form>
+
+            <button
+              type="button"
+              className="btn btn--ghost btn--full btn--skip-onboarding mt-2"
+              onClick={handleSkipForNow}
+              disabled={loading}
+            >
+              Sari peste pentru moment ➔
+            </button>
           </div>
         )}
       </div>

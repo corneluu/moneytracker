@@ -2569,6 +2569,61 @@ body {
   gap: 12px;
 }
 
+.btn--skip-onboarding {
+  color: var(--text-muted) !important;
+  border-color: transparent !important;
+  font-size: 0.82rem;
+  opacity: 0.7;
+  transition: opacity var(--transition), color var(--transition);
+}
+.btn--skip-onboarding:hover {
+  opacity: 1;
+  color: var(--text-secondary) !important;
+}
+
+/* ── Sheet Gate (No Sheet Connected Overlay) ──────────────────── */
+.sheet-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 24px 16px;
+}
+
+.sheet-gate__card {
+  background: var(--bg-800);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.sheet-gate__icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.sheet-gate__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.sheet-gate__desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.sheet-gate__inline-form {
+  text-align: left;
+}
+
 /* ── Mobile Phone Responsiveness ─────────────────────────────── */
 @media (max-width: 600px) {
   .dashboard-settings-toggle {

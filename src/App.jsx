@@ -4,7 +4,7 @@ import ExpenseForm from './components/ExpenseForm.jsx';
 import Subscriptions from './components/Subscriptions.jsx';
 import History from './components/History.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
-import { fetchExpenses, fetchSubscriptions, setOAuthToken, setUserEmail, isUserSheetConfigured } from './utils/sheets.js';
+import { fetchExpenses, fetchSubscriptions, setOAuthToken, setUserEmail, isUserSheetConfigured, createAutoGoogleSheet, setCustomSheetId } from './utils/sheets.js';
 import { isUserSalaryConfigured } from './utils/constants.js';
 import './App.css';
 
@@ -32,6 +32,42 @@ function UserAvatar({ picture, name }) {
   return <span className="user-badge__initial">{initial}</span>;
 }
 
+function SheetConnectInline({ userEmail, onConnected }) {
+  const [input, setInput] = useState('');
+  const [err, setErr] = useState(null);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    setErr(null);
+    try {
+      setCustomSheetId(input, userEmail);
+      if (onConnected) onConnected();
+    } catch (ex) {
+      setErr(ex.message);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="sheet-gate__inline-form">
+      {err && <div className="alert alert--error mb-2" style={{ fontSize: '0.82rem' }}>⚠️ {err}</div>}
+      <input
+        type="text"
+        className="settings-input"
+        placeholder="Lipește link-ul Google Sheet…"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+      />
+      <button
+        type="submit"
+        className="btn btn--ghost btn--full mt-2"
+        disabled={!input.trim()}
+      >
+        🔗 Conectează Sheet Existent
+      </button>
+    </form>
+  );
+}
+
 export default function App() {
   const [expenses, setExpenses] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -43,6 +79,7 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [needsSheetSetup, setNeedsSheetSetup] = useState(false);
   const tokenClient = useRef(null);
 
   const fetchUserProfile = useCallback(async (token) => {
@@ -62,6 +99,8 @@ export default function App() {
         if (!isSheetSet || !isSalarySet) {
           setShowOnboarding(true);
         }
+        // Track whether the sheet is missing (gate dashboard even after onboarding skip)
+        setNeedsSheetSetup(!isSheetSet);
       }
     } catch (e) {
       console.warn('Could not fetch user profile:', e);
@@ -125,10 +164,10 @@ export default function App() {
   }, [fetchUserProfile]);
 
   useEffect(() => {
-    if (isAuthenticated && !showOnboarding) {
+    if (isAuthenticated && !showOnboarding && !needsSheetSetup) {
       loadData();
     }
-  }, [isAuthenticated, showOnboarding, loadData]);
+  }, [isAuthenticated, showOnboarding, needsSheetSetup, loadData]);
 
   function handleLogin() {
     initGoogleAuth(); // Try again in case script loaded late
@@ -306,7 +345,12 @@ export default function App() {
           onReAuth={handleLogin}
           onComplete={() => {
             setShowOnboarding(false);
+            setNeedsSheetSetup(false);
             loadData();
+          }}
+          onSkip={() => {
+            // Close onboarding but keep needsSheetSetup=true to gate dashboard
+            setShowOnboarding(false);
           }}
         />
       )}
@@ -358,44 +402,93 @@ export default function App() {
 
       {/* Main Content */}
       <main className="app-main">
-        {(() => {
-          try {
-            if (activeTab === 0) return (
-              <Dashboard
-                expenses={expenses || []}
-                subscriptions={subscriptions || []}
-                onRefreshData={loadData}
-                onLogout={handleLogout}
-                userEmail={userProfile?.email}
-              />
-            );
-            if (activeTab === 1) return <ExpenseForm onExpenseAdded={handleExpenseAdded} expenses={expenses || []} />;
-            if (activeTab === 2) return (
-              <Subscriptions
-                subscriptions={subscriptions || []}
-                expenses={expenses || []}
-                onSubsChanged={handleSubsChanged}
-                onExpenseAdded={handleExpenseAdded}
-              />
-            );
-            if (activeTab === 3) return (
-              <History
-                expenses={expenses || []}
-                onExpenseUpdated={handleExpenseUpdated}
-                onExpenseDeleted={handleExpenseDeleted}
-              />
-            );
-            return null;
-          } catch (err) {
-            return (
-              <div className="alert alert--error">
-                <h3>UI Crash Detected</h3>
-                <p>{err.message}</p>
-                <button className="btn btn--primary mt-2" onClick={() => window.location.reload()}>Reload App</button>
+        {needsSheetSetup ? (
+          <div className="sheet-gate">
+            <div className="sheet-gate__card">
+              <div className="sheet-gate__icon">📋</div>
+              <h3 className="sheet-gate__title">Conectează un Google Sheet</h3>
+              <p className="sheet-gate__desc">
+                Pentru a folosi MoneyTrack, ai nevoie de un Google Sheet conectat. Creează automat unul sau adaugă un link existent.
+              </p>
+              <button
+                type="button"
+                className="btn btn--primary btn--lg btn--full"
+                onClick={async () => {
+                  try {
+                    setError(null);
+                    setLoading(true);
+                    await createAutoGoogleSheet(userProfile?.email);
+                    setNeedsSheetSetup(false);
+                    loadData();
+                  } catch (err) {
+                    setError(err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner spinner--sm" />
+                    <span>Se creează…</span>
+                  </>
+                ) : (
+                  <span>🪄 Creează Automat Google Sheet</span>
+                )}
+              </button>
+              <div className="settings-divider my-3">
+                <span>sau</span>
               </div>
-            );
-          }
-        })()}
+              <SheetConnectInline
+                userEmail={userProfile?.email}
+                onConnected={() => {
+                  setNeedsSheetSetup(false);
+                  loadData();
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          (() => {
+            try {
+              if (activeTab === 0) return (
+                <Dashboard
+                  expenses={expenses || []}
+                  subscriptions={subscriptions || []}
+                  onRefreshData={loadData}
+                  onLogout={handleLogout}
+                  userEmail={userProfile?.email}
+                />
+              );
+              if (activeTab === 1) return <ExpenseForm onExpenseAdded={handleExpenseAdded} expenses={expenses || []} />;
+              if (activeTab === 2) return (
+                <Subscriptions
+                  subscriptions={subscriptions || []}
+                  expenses={expenses || []}
+                  onSubsChanged={handleSubsChanged}
+                  onExpenseAdded={handleExpenseAdded}
+                />
+              );
+              if (activeTab === 3) return (
+                <History
+                  expenses={expenses || []}
+                  onExpenseUpdated={handleExpenseUpdated}
+                  onExpenseDeleted={handleExpenseDeleted}
+                />
+              );
+              return null;
+            } catch (err) {
+              return (
+                <div className="alert alert--error">
+                  <h3>UI Crash Detected</h3>
+                  <p>{err.message}</p>
+                  <button className="btn btn--primary mt-2" onClick={() => window.location.reload()}>Reload App</button>
+                </div>
+              );
+            }
+          })()
+        )}
       </main>
 
       <footer className="app-footer">
