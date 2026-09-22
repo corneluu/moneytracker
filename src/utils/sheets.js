@@ -3,11 +3,25 @@ import { logSystemError } from './discordLogger.js';
 const DEFAULT_SHEET_ID = import.meta.env.VITE_SHEET_ID || '';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
-export function getActiveSheetId() {
-  return localStorage.getItem('moneytrack_custom_sheet_id') || DEFAULT_SHEET_ID;
+function getSheetKey(userEmail) {
+  if (userEmail && typeof userEmail === 'string') {
+    const cleanEmail = userEmail.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+    return `moneytrack_custom_sheet_id_${cleanEmail}`;
+  }
+  return 'moneytrack_custom_sheet_id';
 }
 
-export function setCustomSheetId(input) {
+export function getActiveSheetId(userEmail) {
+  const key = getSheetKey(userEmail);
+  return localStorage.getItem(key) || localStorage.getItem('moneytrack_custom_sheet_id') || DEFAULT_SHEET_ID;
+}
+
+export function isUserSheetConfigured(userEmail) {
+  const key = getSheetKey(userEmail);
+  return localStorage.getItem(key) !== null;
+}
+
+export function setCustomSheetId(input, userEmail) {
   if (!input || !input.trim()) throw new Error('Te rugăm să introduci un ID sau link valid de Google Sheet.');
   const trimmed = input.trim();
   let extractedId = trimmed;
@@ -18,17 +32,19 @@ export function setCustomSheetId(input) {
     extractedId = urlMatch[1];
   }
 
-  localStorage.setItem('moneytrack_custom_sheet_id', extractedId);
+  const key = getSheetKey(userEmail);
+  localStorage.setItem(key, extractedId);
   return extractedId;
 }
 
-export function resetCustomSheetId() {
-  localStorage.removeItem('moneytrack_custom_sheet_id');
+export function resetCustomSheetId(userEmail) {
+  const key = getSheetKey(userEmail);
+  localStorage.removeItem(key);
   return DEFAULT_SHEET_ID;
 }
 
-export function getGoogleSheetUrl() {
-  const currentId = getActiveSheetId();
+export function getGoogleSheetUrl(userEmail) {
+  const currentId = getActiveSheetId(userEmail);
   if (!currentId) return 'https://docs.google.com/spreadsheets';
   return `https://docs.google.com/spreadsheets/d/${currentId}/edit`;
 }
@@ -36,7 +52,7 @@ export function getGoogleSheetUrl() {
 /**
  * 1-Click Auto Create Google Sheet in user's personal Google Drive
  */
-export async function createAutoGoogleSheet() {
+export async function createAutoGoogleSheet(userEmail) {
   const url = 'https://sheets.googleapis.com/v4/spreadsheets';
   const body = {
     properties: {
@@ -85,7 +101,7 @@ export async function createAutoGoogleSheet() {
   });
 
   if (res && res.spreadsheetId) {
-    localStorage.setItem('moneytrack_custom_sheet_id', res.spreadsheetId);
+    setCustomSheetId(res.spreadsheetId, userEmail);
     return res.spreadsheetId;
   }
   throw new Error('Nu s-a putut obține ID-ul noului Google Sheet de la Google.');
@@ -95,13 +111,18 @@ export async function createAutoGoogleSheet() {
 // Helpers
 // ──────────────────────────────────────────────────────────────
 let oauthToken = null;
+let currentUserEmail = null;
 
 export function setOAuthToken(token) {
   oauthToken = token;
 }
 
+export function setUserEmail(email) {
+  currentUserEmail = email;
+}
+
 function buildUrl(path, params = {}) {
-  const activeId = getActiveSheetId();
+  const activeId = getActiveSheetId(currentUserEmail);
   let base = `https://sheets.googleapis.com/v4/spreadsheets/${activeId}`;
 
   // If path is full URL (like creating new spreadsheet)

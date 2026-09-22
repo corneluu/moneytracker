@@ -15,18 +15,18 @@ import {
   createAutoGoogleSheet,
 } from '../utils/sheets.js';
 
-export default function Dashboard({ expenses, subscriptions = [], onRefreshData, onLogout }) {
+export default function Dashboard({ expenses, subscriptions = [], onRefreshData, onLogout, userEmail }) {
   const currentCycle = getCurrentCycle();
   const prevCycle = getPreviousCycle(currentCycle);
   const cycleRange = formatCycleRange(currentCycle);
-  const sheetUrl = getGoogleSheetUrl();
-  const activeId = getActiveSheetId();
+  const sheetUrl = getGoogleSheetUrl(userEmail);
+  const activeId = getActiveSheetId(userEmail);
 
   // Dynamic salary
-  const [salary, setSalaryState] = useState(getSalary());
-  const [payDay, setPayDayState] = useState(getPayDay());
-  const [salaryInput, setSalaryInput] = useState(String(getSalary()));
-  const [payDayInput, setPayDayInput] = useState(String(getPayDay()));
+  const [salary, setSalaryState] = useState(getSalary(userEmail));
+  const [payDay, setPayDayState] = useState(getPayDay(userEmail));
+  const [salaryInput, setSalaryInput] = useState(String(getSalary(userEmail)));
+  const [payDayInput, setPayDayInput] = useState(String(getPayDay(userEmail)));
   const [salaryEditing, setSalaryEditing] = useState(false);
   const [salaryMsg, setSalaryMsg] = useState(null);
 
@@ -41,7 +41,7 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
     setSheetMsg(null);
     setSheetLoading(true);
     try {
-      const newId = await createAutoGoogleSheet();
+      const newId = await createAutoGoogleSheet(userEmail);
       setSheetMsg(`🎉 Noul tău Google Sheet a fost creat cu succes în Google Drive și conectat!`);
       if (onRefreshData) onRefreshData();
     } catch (err) {
@@ -56,7 +56,7 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
     setSheetError(null);
     setSheetMsg(null);
     try {
-      const savedId = setCustomSheetId(customInput);
+      const savedId = setCustomSheetId(customInput, userEmail);
       setSheetMsg(`✅ Google Sheet conectat cu succes! (ID: ${savedId.slice(0, 12)}...)`);
       setCustomInput('');
       if (onRefreshData) onRefreshData();
@@ -67,7 +67,7 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
 
   function handleResetSheet() {
     if (!window.confirm('Ești sigur că vrei să resetezi la Google Sheet-ul implicit?')) return;
-    resetCustomSheetId();
+    resetCustomSheetId(userEmail);
     setSheetMsg('🔄 S-a revenit la Google Sheet-ul implicit.');
     setSheetError(null);
     if (onRefreshData) onRefreshData();
@@ -298,8 +298,8 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
                 className="btn btn--primary btn-save-salary"
                 onClick={() => {
                   try {
-                    const newSalary = saveSalary(salaryInput);
-                    const newPayDay = savePayDay(payDayInput);
+                    const newSalary = saveSalary(salaryInput, userEmail);
+                    const newPayDay = savePayDay(payDayInput, userEmail);
                     setSalaryState(newSalary);
                     setPayDayState(newPayDay);
                     setSalaryEditing(false);

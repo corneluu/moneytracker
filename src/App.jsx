@@ -3,7 +3,9 @@ import Dashboard from './components/Dashboard.jsx';
 import ExpenseForm from './components/ExpenseForm.jsx';
 import Subscriptions from './components/Subscriptions.jsx';
 import History from './components/History.jsx';
-import { fetchExpenses, fetchSubscriptions, setOAuthToken } from './utils/sheets.js';
+import OnboardingModal from './components/OnboardingModal.jsx';
+import { fetchExpenses, fetchSubscriptions, setOAuthToken, setUserEmail, isUserSheetConfigured } from './utils/sheets.js';
+import { isUserSalaryConfigured } from './utils/constants.js';
 import './App.css';
 
 const TABS = ['Dashboard', 'Add Expense', 'Subscriptions', 'History'];
@@ -17,9 +19,34 @@ export default function App() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
 
-  // Auth State
+  // Auth & Profile State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const tokenClient = useRef(null);
+
+  const fetchUserProfile = useCallback(async (token) => {
+    try {
+      const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const profile = await res.json();
+        setUserProfile(profile);
+        setUserEmail(profile.email);
+        sessionStorage.setItem('moneytrack_user_profile', JSON.stringify(profile));
+
+        // Check if onboarding is needed for this user
+        const isSheetSet = isUserSheetConfigured(profile.email);
+        const isSalarySet = isUserSalaryConfigured(profile.email);
+        if (!isSheetSet || !isSalarySet) {
+          setShowOnboarding(true);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch user profile:', e);
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -42,13 +69,14 @@ export default function App() {
     if (window.google && !tokenClient.current) {
       tokenClient.current = window.google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/spreadsheets',
-        callback: (tokenResponse) => {
+        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+        callback: async (tokenResponse) => {
           if (tokenResponse && tokenResponse.access_token) {
             setOAuthToken(tokenResponse.access_token);
             sessionStorage.setItem('moneytrack_token', tokenResponse.access_token);
             setIsAuthenticated(true);
             setError(null);
+            await fetchUserProfile(tokenResponse.access_token);
           } else {
             setError('Failed to authenticate with Google.');
           }
@@ -58,20 +86,29 @@ export default function App() {
   }
 
   useEffect(() => {
-    // Check for cached token (optional, but good for local dev refreshes)
+    // Check for cached token & user profile
     const storedToken = sessionStorage.getItem('moneytrack_token');
+    const storedProfile = sessionStorage.getItem('moneytrack_user_profile');
+    if (storedProfile) {
+      try {
+        const prof = JSON.parse(storedProfile);
+        setUserProfile(prof);
+        setUserEmail(prof.email);
+      } catch (e) {}
+    }
     if (storedToken) {
       setOAuthToken(storedToken);
       setIsAuthenticated(true);
+      fetchUserProfile(storedToken);
     }
     initGoogleAuth();
-  }, []);
+  }, [fetchUserProfile]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !showOnboarding) {
       loadData();
     }
-  }, [isAuthenticated, loadData]);
+  }, [isAuthenticated, showOnboarding, loadData]);
 
   function handleLogin() {
     initGoogleAuth(); // Try again in case script loaded late
@@ -93,8 +130,12 @@ export default function App() {
     }
 
     setIsAuthenticated(false);
+    setUserProfile(null);
+    setShowOnboarding(false);
     setOAuthToken(null);
+    setUserEmail(null);
     sessionStorage.removeItem('moneytrack_token');
+    sessionStorage.removeItem('moneytrack_user_profile');
     setExpenses([]);
     setSubscriptions([]);
   }
@@ -175,7 +216,18 @@ export default function App() {
             <span className="app-logo__icon">💰</span>
             <span className="app-logo__text">MoneyTrack</span>
           </div>
+
           <div className="header-actions">
+            {userProfile && (
+              <div className="user-badge" title={`Conectat ca ${userProfile.email}`}>
+                {userProfile.picture ? (
+                  <img src={userProfile.picture} alt={userProfile.name} className="user-badge__avatar" />
+                ) : (
+                  <span className="user-badge__icon">👤</span>
+                )}
+                <span className="user-badge__name">{userProfile.given_name || userProfile.name || userProfile.email}</span>
+              </div>
+            )}
             <button
               className="btn btn--ghost btn--sm refresh-btn"
               onClick={loadData}
@@ -196,6 +248,18 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* Onboarding Overlay for New Users */}
+      {showOnboarding && (
+        <OnboardingModal
+          userEmail={userProfile?.email}
+          userName={userProfile?.given_name || userProfile?.name}
+          onComplete={() => {
+            setShowOnboarding(false);
+            loadData();
+          }}
+        />
+      )}
 
       {/* Error banner */}
       {error && (
@@ -240,6 +304,7 @@ export default function App() {
                 subscriptions={subscriptions || []}
                 onRefreshData={loadData}
                 onLogout={handleLogout}
+                userEmail={userProfile?.email}
               />
             );
             if (activeTab === 1) return <ExpenseForm onExpenseAdded={handleExpenseAdded} expenses={expenses || []} />;
