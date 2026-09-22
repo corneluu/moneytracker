@@ -1968,6 +1968,27 @@ body {
   border: none;
 }
 
+.receipt-pdf-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+  width: 100%;
+}
+
+.receipt-pdf-icon {
+  font-size: 3.5rem;
+  margin-bottom: 8px;
+}
+
+.receipt-pdf-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  word-break: break-all;
+  text-align: center;
+}
+
 /* ── Dashboard Google Sheet Link & Cycle Bar ─────────────────── */
 .dashboard-top-bar {
   display: flex;

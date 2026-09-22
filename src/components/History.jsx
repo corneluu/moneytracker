@@ -198,18 +198,74 @@ export default function History({ expenses, onExpenseUpdated, onExpenseDeleted }
               {(() => {
                 const rData = resolveReceiptData(viewReceipt);
                 if (!rData) return <p className="empty-state">Nu există date despre bon</p>;
+                
                 if (rData.dataUrl) {
-                  return rData.type === 'pdf' ? (
-                    <iframe src={rData.dataUrl} title="Bon Digital PDF" className="receipt-pdf-frame" />
-                  ) : (
-                    <img src={rData.dataUrl} alt={`Bon ${viewReceipt.item}`} className="receipt-modal-img" />
-                  );
+                  if (rData.type === 'pdf') {
+                    // PDF: show download/open buttons instead of iframe (mobile browsers block data: iframes)
+                    return (
+                      <div className="receipt-pdf-actions">
+                        <div className="receipt-pdf-icon">📄</div>
+                        <p className="receipt-pdf-name">{rData.name}</p>
+                        <button
+                          type="button"
+                          className="btn btn--primary btn--lg btn--full mt-3"
+                          onClick={() => {
+                            // Convert data URL to blob and open in new tab
+                            try {
+                              const byteString = atob(rData.dataUrl.split(',')[1]);
+                              const mimeString = rData.dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                              const ab = new ArrayBuffer(byteString.length);
+                              const ia = new Uint8Array(ab);
+                              for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+                              const blob = new Blob([ab], { type: mimeString });
+                              const blobUrl = URL.createObjectURL(blob);
+                              window.open(blobUrl, '_blank');
+                            } catch (err) {
+                              console.warn('Failed to open PDF:', err);
+                            }
+                          }}
+                        >
+                          📖 Deschide PDF
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--full mt-2"
+                          onClick={() => {
+                            try {
+                              const byteString = atob(rData.dataUrl.split(',')[1]);
+                              const mimeString = rData.dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                              const ab = new ArrayBuffer(byteString.length);
+                              const ia = new Uint8Array(ab);
+                              for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+                              const blob = new Blob([ab], { type: mimeString });
+                              const blobUrl = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = blobUrl;
+                              a.download = rData.name || 'bon.pdf';
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                            } catch (err) {
+                              console.warn('Failed to download PDF:', err);
+                            }
+                          }}
+                        >
+                          ⬇️ Descarcă PDF
+                        </button>
+                      </div>
+                    );
+                  }
+                  // Image: show normally
+                  return <img src={rData.dataUrl} alt={`Bon ${viewReceipt.item}`} className="receipt-modal-img" />;
                 }
+                
+                // No dataUrl available (localStorage cache missing — different device/cleared)
                 return (
                   <div className="receipt-notice" style={{ margin: 0, textAlign: 'center' }}>
-                    <p style={{ fontWeight: 700 }}>📄 {rData.name}</p>
-                    <p style={{ fontSize: '0.82rem', marginTop: '4px' }}>
-                      Bonul a fost salvat cu succes ca referință în baza de date Google Sheets.
+                    <div className="receipt-pdf-icon">📄</div>
+                    <p style={{ fontWeight: 700 }}>{rData.name}</p>
+                    <p style={{ fontSize: '0.82rem', marginTop: '8px', color: 'var(--text-muted)' }}>
+                      Bonul a fost salvat ca referință în Google Sheets. Fișierul original este disponibil doar pe dispozitivul de pe care a fost încărcat.
                     </p>
                   </div>
                 );
