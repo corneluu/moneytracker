@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { setSalary as saveSalary, setPayDay as savePayDay } from '../utils/constants.js';
 import { createAutoGoogleSheet, setCustomSheetId } from '../utils/sheets.js';
 
-export default function OnboardingModal({ userEmail, userName, onComplete }) {
+export default function OnboardingModal({ userEmail, userName, onComplete, onReAuth }) {
   const [step, setStep] = useState(1);
   const [salaryInput, setSalaryInput] = useState('5000');
   const [payDayInput, setPayDayInput] = useState('7');
@@ -10,6 +10,7 @@ export default function OnboardingModal({ userEmail, userName, onComplete }) {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const isScopeError = error && error.toLowerCase().includes('scope');
 
   function handleStep1Submit(e) {
     e.preventDefault();
@@ -47,6 +48,11 @@ export default function OnboardingModal({ userEmail, userName, onComplete }) {
     }
   }
 
+  function handleReAuthClick() {
+    sessionStorage.removeItem('moneytrack_token');
+    if (onReAuth) onReAuth();
+  }
+
   return (
     <div className="onboarding-overlay" role="dialog" aria-modal="true">
       <div className="onboarding-card">
@@ -64,7 +70,20 @@ export default function OnboardingModal({ userEmail, userName, onComplete }) {
             : 'Fiecare utilizator MoneyTrack are propriul Google Sheet securizat în Google Drive-ul personal. Fă 1 click mai jos pentru a genera automat fișierul tău!'}
         </p>
 
-        {error && <div className="alert alert--error mb-3" role="alert">⚠️ {error}</div>}
+        {error && (
+          <div className="alert alert--error mb-3" role="alert">
+            <div>⚠️ {error}</div>
+            {isScopeError && (
+              <button
+                type="button"
+                className="btn btn--primary btn--sm mt-2"
+                onClick={handleReAuthClick}
+              >
+                🔑 Re-conectează-te cu Google (Acordă permisiuni)
+              </button>
+            )}
+          </div>
+        )}
 
         {step === 1 && (
           <form onSubmit={handleStep1Submit} className="onboarding-form">

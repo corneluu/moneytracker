@@ -69,7 +69,7 @@ export default function App() {
     if (window.google && !tokenClient.current) {
       tokenClient.current = window.google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
         callback: async (tokenResponse) => {
           if (tokenResponse && tokenResponse.access_token) {
             setOAuthToken(tokenResponse.access_token);
@@ -254,6 +254,7 @@ export default function App() {
         <OnboardingModal
           userEmail={userProfile?.email}
           userName={userProfile?.given_name || userProfile?.name}
+          onReAuth={handleLogin}
           onComplete={() => {
             setShowOnboarding(false);
             loadData();
