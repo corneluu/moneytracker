@@ -119,6 +119,10 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
   const spentDiff = spentThisCycle - spentPrevCycle;
   const spentPercentChange = spentPrevCycle > 0 ? (spentDiff / spentPrevCycle) * 100 : 0;
 
+  // Collapsible settings state (collapsed by default)
+  const [showSalarySettings, setShowSalarySettings] = useState(false);
+  const [showDatabaseSettings, setShowDatabaseSettings] = useState(false);
+
   return (
     <section className="dashboard" aria-label="Financial Dashboard">
       <div className="dashboard-top-bar">
@@ -223,187 +227,208 @@ export default function Dashboard({ expenses, subscriptions = [], onRefreshData,
         </div>
       </div>
 
-      {/* 💰 SALARY & PAY DAY SETTINGS */}
+      {/* 💰 SALARY & PAY DAY SETTINGS (Collapsible) */}
       <div className="card dashboard-settings-card">
-        <div className="dashboard-settings-header">
-          <h3 className="dashboard-settings__title">
+        <button
+          type="button"
+          className="dashboard-settings-toggle"
+          onClick={() => setShowSalarySettings(!showSalarySettings)}
+          aria-expanded={showSalarySettings}
+        >
+          <div className="settings-toggle-title">
             <span>💰 Salariu & Ziua de Plată</span>
-          </h3>
-        </div>
-
-        <p className="dashboard-settings__desc">
-          Setează salariul tău lunar și ziua în care îl primești. Ciclul bugetar se va calcula automat pe baza acestor date.
-        </p>
-
-        {salaryMsg && <div className="alert alert--success mb-3" role="status">{salaryMsg}</div>}
-
-        {!salaryEditing ? (
-          <div className="salary-display">
-            <div className="salary-display__row">
-              <div className="salary-display__item">
-                <span className="salary-display__label">💵 Salariu lunar</span>
-                <span className="salary-display__value">{fmt(salary)} RON</span>
-              </div>
-              <div className="salary-display__item">
-                <span className="salary-display__label">📅 Ziua salariului</span>
-                <span className="salary-display__value">{payDay} ale lunii</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="btn btn--ghost btn-edit-salary"
-              onClick={() => {
-                setSalaryEditing(true);
-                setSalaryInput(String(salary));
-                setPayDayInput(String(payDay));
-                setSalaryMsg(null);
-              }}
-            >
-              ✏️ Editează
-            </button>
+            <span className="settings-summary-badge">
+              💵 {fmt(salary)} RON · Ziua {payDay}
+            </span>
           </div>
-        ) : (
-          <div className="salary-edit-form">
-            <div className="salary-edit-fields">
-              <div className="form-group">
-                <label htmlFor="salary-input">Salariu lunar (RON)</label>
-                <input
-                  id="salary-input"
-                  type="number"
-                  className="settings-input"
-                  min="0"
-                  step="100"
-                  value={salaryInput}
-                  onChange={(e) => setSalaryInput(e.target.value)}
-                  placeholder="ex: 5000"
-                />
+          <span className={`settings-toggle-arrow ${showSalarySettings ? 'is-open' : ''}`}>▼</span>
+        </button>
+
+        {showSalarySettings && (
+          <div className="settings-accordion-body">
+            <p className="dashboard-settings__desc mt-2">
+              Setează salariul tău lunar și ziua în care îl primești. Ciclul bugetar se va calcula automat pe baza acestor date.
+            </p>
+
+            {salaryMsg && <div className="alert alert--success mb-3" role="status">{salaryMsg}</div>}
+
+            {!salaryEditing ? (
+              <div className="salary-display">
+                <div className="salary-display__row">
+                  <div className="salary-display__item">
+                    <span className="salary-display__label">💵 Salariu lunar</span>
+                    <span className="salary-display__value">{fmt(salary)} RON</span>
+                  </div>
+                  <div className="salary-display__item">
+                    <span className="salary-display__label">📅 Ziua salariului</span>
+                    <span className="salary-display__value">{payDay} ale lunii</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn--ghost btn-edit-salary"
+                  onClick={() => {
+                    setSalaryEditing(true);
+                    setSalaryInput(String(salary));
+                    setPayDayInput(String(payDay));
+                    setSalaryMsg(null);
+                  }}
+                >
+                  ✏️ Editează
+                </button>
               </div>
-              <div className="form-group">
-                <label htmlFor="payday-input">Ziua salariului (1-31)</label>
-                <input
-                  id="payday-input"
-                  type="number"
-                  className="settings-input"
-                  min="1"
-                  max="31"
-                  value={payDayInput}
-                  onChange={(e) => setPayDayInput(e.target.value)}
-                  placeholder="ex: 7"
-                />
+            ) : (
+              <div className="salary-edit-form">
+                <div className="salary-edit-fields">
+                  <div className="form-group">
+                    <label htmlFor="salary-input">Salariu lunar (RON)</label>
+                    <input
+                      id="salary-input"
+                      type="number"
+                      className="settings-input"
+                      min="0"
+                      step="100"
+                      value={salaryInput}
+                      onChange={(e) => setSalaryInput(e.target.value)}
+                      placeholder="ex: 5000"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="payday-input">Ziua salariului (1-31)</label>
+                    <input
+                      id="payday-input"
+                      type="number"
+                      className="settings-input"
+                      min="1"
+                      max="31"
+                      value={payDayInput}
+                      onChange={(e) => setPayDayInput(e.target.value)}
+                      placeholder="ex: 7"
+                    />
+                  </div>
+                </div>
+                <div className="salary-edit-actions">
+                  <button
+                    type="button"
+                    className="btn btn--primary btn-save-salary"
+                    onClick={() => {
+                      try {
+                        const newSalary = saveSalary(salaryInput, userEmail);
+                        const newPayDay = savePayDay(payDayInput, userEmail);
+                        setSalaryState(newSalary);
+                        setPayDayState(newPayDay);
+                        setSalaryEditing(false);
+                        setSalaryMsg(`✅ Salvat! Salariu: ${fmt(newSalary)} RON, Ziua: ${newPayDay}`);
+                        if (onRefreshData) onRefreshData();
+                      } catch (err) {
+                        setSalaryMsg(`❌ ${err.message}`);
+                      }
+                    }}
+                  >
+                    💾 Salvează
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    onClick={() => {
+                      setSalaryEditing(false);
+                      setSalaryMsg(null);
+                    }}
+                  >
+                    Anulează
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="salary-edit-actions">
-              <button
-                type="button"
-                className="btn btn--primary btn-save-salary"
-                onClick={() => {
-                  try {
-                    const newSalary = saveSalary(salaryInput, userEmail);
-                    const newPayDay = savePayDay(payDayInput, userEmail);
-                    setSalaryState(newSalary);
-                    setPayDayState(newPayDay);
-                    setSalaryEditing(false);
-                    setSalaryMsg(`✅ Salvat! Salariu: ${fmt(newSalary)} RON, Ziua: ${newPayDay}`);
-                    if (onRefreshData) onRefreshData();
-                  } catch (err) {
-                    setSalaryMsg(`❌ ${err.message}`);
-                  }
-                }}
-              >
-                💾 Salvează
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost"
-                onClick={() => {
-                  setSalaryEditing(false);
-                  setSalaryMsg(null);
-                }}
-              >
-                Anulează
-              </button>
-            </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* ⚙️ SETTINGS / DATABASE SETUP SECTION */}
+      {/* ⚙️ SETTINGS / DATABASE SETUP SECTION (Collapsible) */}
       <div className="card dashboard-settings-card">
-        <div className="dashboard-settings-header">
-          <h3 className="dashboard-settings__title">
+        <button
+          type="button"
+          className="dashboard-settings-toggle"
+          onClick={() => setShowDatabaseSettings(!showDatabaseSettings)}
+          aria-expanded={showDatabaseSettings}
+        >
+          <div className="settings-toggle-title">
             <span>⚙️ Setări Bază de Date (Google Sheet)</span>
-          </h3>
-          <span className="sheet-connected-badge">🟢 Conectat</span>
-        </div>
-
-        <p className="dashboard-settings__desc">
-          Fiecare utilizator poate avea propriul Google Sheet creat și securizat în contul său personal de Google Drive.
-        </p>
-
-        {sheetMsg && <div className="alert alert--success mb-3" role="status">{sheetMsg}</div>}
-        {sheetError && <div className="alert alert--error mb-3" role="alert">{sheetError}</div>}
-
-        {/* 1-Click Auto Creation */}
-        <div className="settings-auto-create-box">
-          <div className="auto-create-info">
-            <h4>🪄 Cont Nou? Creează-ți propriul Google Sheet cu 1 Singur Click</h4>
-            <p>Aplicația va genera automat un fișier complet formatat în Google Drive-ul tău cu tabelele Expenses & Subscriptions.</p>
+            <span className="sheet-connected-badge">🟢 Conectat</span>
           </div>
-          <button
-            type="button"
-            className="btn btn--primary btn-auto-create-sheet"
-            disabled={sheetLoading}
-            onClick={handleAutoCreateSheet}
-          >
-            {sheetLoading ? (
-              <>
-                <span className="spinner spinner--sm" />
-                <span>Se creează în Google Drive...</span>
-              </>
-            ) : (
-              <>
-                <span>🪄 Creează Automat Google Sheet-ul Meu</span>
-              </>
-            )}
-          </button>
-        </div>
+          <span className={`settings-toggle-arrow ${showDatabaseSettings ? 'is-open' : ''}`}>▼</span>
+        </button>
 
-        <div className="settings-divider">
-          <span>sau conectează un Google Sheet existent</span>
-        </div>
+        {showDatabaseSettings && (
+          <div className="settings-accordion-body">
+            <p className="dashboard-settings__desc mt-2">
+              Fiecare utilizator are propriul Google Sheet securizat în contul său personal de Google Drive.
+            </p>
 
-        {/* Custom Sheet Link/ID Input */}
-        <form onSubmit={handleSaveCustomSheet} className="settings-custom-form">
-          <div className="form-group flex-1">
-            <label htmlFor="custom-sheet-input">Link sau ID Google Sheet Existent</label>
-            <input
-              id="custom-sheet-input"
-              type="text"
-              className="settings-input"
-              placeholder="Lipește link-ul (ex: https://docs.google.com/spreadsheets/d/...) sau ID-ul"
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              disabled={sheetLoading}
-            />
-          </div>
-          <button type="submit" className="btn btn--ghost btn-connect-sheet" disabled={sheetLoading || !customInput.trim()}>
-            💾 Conectează Sheet
-          </button>
-        </form>
+            {sheetMsg && <div className="alert alert--success mb-3" role="status">{sheetMsg}</div>}
+            {sheetError && <div className="alert alert--error mb-3" role="alert">{sheetError}</div>}
 
-        <div className="settings-footer-info">
-          <span className="active-id-label">ID Activ: <code>{activeId || 'Implicit'}</code></span>
-          <div className="settings-footer-actions">
-            <button type="button" className="btn-reset-sheet" onClick={handleResetSheet}>
-              🔄 Resetează Sheet
-            </button>
-            {onLogout && (
-              <button type="button" className="btn-logout-settings" onClick={onLogout}>
-                🚪 Deconectare Cont Google
+            {/* 1-Click Auto Creation */}
+            <div className="settings-auto-create-box">
+              <div className="auto-create-info">
+                <h4>🪄 Creează-ți propriul Google Sheet cu 1 Click</h4>
+                <p>Aplicația va genera automat un fișier formatat în Google Drive-ul tău cu tabelele Expenses & Subscriptions.</p>
+              </div>
+              <button
+                type="button"
+                className="btn btn--primary btn-auto-create-sheet"
+                disabled={sheetLoading}
+                onClick={handleAutoCreateSheet}
+              >
+                {sheetLoading ? (
+                  <>
+                    <span className="spinner spinner--sm" />
+                    <span>Se creează în Google Drive...</span>
+                  </>
+                ) : (
+                  <span>🪄 Creează Automat Google Sheet-ul Meu</span>
+                )}
               </button>
-            )}
+            </div>
+
+            <div className="settings-divider">
+              <span>sau conectează un Google Sheet existent</span>
+            </div>
+
+            {/* Custom Sheet Link/ID Input */}
+            <form onSubmit={handleSaveCustomSheet} className="settings-custom-form">
+              <div className="form-group flex-1">
+                <label htmlFor="custom-sheet-input">Link sau ID Google Sheet Existent</label>
+                <input
+                  id="custom-sheet-input"
+                  type="text"
+                  className="settings-input"
+                  placeholder="Lipește link-ul (ex: https://docs.google.com/spreadsheets/d/...)"
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  disabled={sheetLoading}
+                />
+              </div>
+              <button type="submit" className="btn btn--ghost btn-connect-sheet" disabled={sheetLoading || !customInput.trim()}>
+                💾 Conectează Sheet
+              </button>
+            </form>
+
+            <div className="settings-footer-info">
+              <span className="active-id-label">ID Activ: <code>{activeId || 'Implicit'}</code></span>
+              <div className="settings-footer-actions">
+                <button type="button" className="btn-reset-sheet" onClick={handleResetSheet}>
+                  🔄 Resetează Sheet
+                </button>
+                {onLogout && (
+                  <button type="button" className="btn-logout-settings" onClick={onLogout}>
+                    🚪 Deconectare Cont Google
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

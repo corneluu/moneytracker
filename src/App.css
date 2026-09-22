@@ -2135,6 +2135,66 @@ body {
   transition: all var(--transition);
 }
 
+/* ── Settings Accordion Toggle ────────────────────────────── */
+.dashboard-settings-card {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.dashboard-settings-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.dashboard-settings-toggle:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.settings-toggle-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.settings-summary-badge {
+  background: rgba(99, 179, 237, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(99, 179, 237, 0.25);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.settings-toggle-arrow {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.settings-toggle-arrow.is-open {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+.settings-accordion-body {
+  padding: 0 20px 20px 20px;
+  border-top: 1px solid var(--border);
+  animation: fadeIn 0.2s ease-out;
+}
+
 .btn-logout-settings:hover {
   background: rgba(252,129,129,0.25);
   border-color: var(--red);
@@ -2342,6 +2402,102 @@ body {
   flex-direction: column;
   gap: 12px;
 }
+
+/* ── Mobile Phone Responsiveness ─────────────────────────────── */
+@media (max-width: 600px) {
+  .dashboard-settings-toggle {
+    padding: 14px 16px;
+  }
+  .settings-toggle-title {
+    gap: 8px;
+    font-size: 0.88rem;
+  }
+  .settings-summary-badge {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+  }
+  .settings-accordion-body {
+    padding: 0 16px 16px 16px;
+  }
+  .salary-display {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px;
+  }
+  .salary-display__row {
+    gap: 16px;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .btn-edit-salary {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+  .salary-edit-fields {
+    grid-template-columns: 1fr;
+  }
+  .salary-edit-actions {
+    flex-direction: column;
+  }
+  .salary-edit-actions .btn {
+    width: 100%;
+  }
+  .settings-custom-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn-connect-sheet {
+    width: 100%;
+  }
+  .settings-footer-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .settings-footer-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Header & Navigation on Mobile */
+  .app-header__inner {
+    padding: 10px 14px;
+  }
+  .user-badge__name {
+    display: none; /* Hide name text on tiny screens, show avatar */
+  }
+  .header-actions {
+    gap: 6px;
+  }
+  .refresh-btn, .btn--logout {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  /* Tab Navigation */
+  .tab-nav {
+    padding: 0 6px;
+    gap: 4px;
+  }
+  .tab-nav__btn {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+
+  /* Cards Grid on Phone */
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+  }
+
+  /* Onboarding Card */
+  .onboarding-card {
+    padding: 20px;
+    margin: 10px;
+  }
+}
+
 
 
 
